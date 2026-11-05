@@ -93,6 +93,20 @@ state; there is no persistence, history, telemetry, or network request. The
 signature segment is shown verbatim and empty signatures are not treated as
 proof of validity.
 
+### API Builder
+
+`src/features/api` owns the Stage 3A request editor. `api-request.ts` is a pure,
+in-memory request model: methods, URL, key/value rows with enabled flags, and a
+body with a content type. It normalizes enabled rows, builds query strings, and
+validates absolute http/https URLs without network, storage, Chrome, or DOM
+access.
+
+`ApiBuilderScreen.tsx` composes the method/URL bar, Params, Headers, and Body
+sections, validation feedback, reset, and explicit empty states. Request drafts
+stay only in component state; nothing is persisted, transmitted, logged, or
+cached. The Send control is deliberately disabled until the execution stage
+lands.
+
 ### DevTools
 
 `devtools.html` runs `src/devtools/index.ts`, which calls
@@ -190,9 +204,9 @@ remote assets, so there are no external fonts, images, or icon libraries.
 Vitest runs two projects:
 
 - `node` for pure logic (`src/shared`, `src/background`, `json-core`,
-  `jwt-core`, `jwt-claims`, manifest contract)
-- `dom` with jsdom for components, storage, and the JSON tree/editor and JWT
-  screens
+  `jwt-core`, `jwt-claims`, `api-request`, manifest contract)
+- `dom` with jsdom for components, storage, and the JSON tree/editor, JWT, and
+  API Builder screens
 
 `src/test/setup.ts` installs jest-dom matchers and RTL cleanup. Tests mock
 `chrome` with `vi.stubGlobal`. CodeMirror renders under jsdom; editor

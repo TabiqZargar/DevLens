@@ -4,11 +4,12 @@ DevLens is a local-first developer toolkit that runs as a Manifest V3 browser
 extension in Brave, Chrome, and Edge. It is designed for inspecting, shaping,
 and testing web APIs without sending developer data to a backend.
 
-This repository ships the extension foundation plus **JSON Studio** and
-**JWT Inspector**, the first fully functional modules. JSON is formatted,
-minified, validated, and explored entirely on-device, and JWTs are decoded and
-inspected without verification or network access. Neither feature uploads or
-persists developer data. Network capture, the API builder, Ollama, and Page
+This repository ships the extension foundation plus **JSON Studio**,
+**JWT Inspector**, and the **API Builder request editor**. JSON is formatted,
+minified, validated, and explored entirely on-device, JWTs are decoded and
+inspected without verification or network access, and API requests can be
+composed without being sent. None of these features upload or persist developer
+data. Network capture, API request execution and collections, Ollama, and Page
 Inspector remain scaffolded.
 
 ## Stack
@@ -118,8 +119,9 @@ Implemented:
 
 - Manifest V3 output for Chromium browsers
 - Popup launcher with background-worker health check
-- Full workspace shell with six module routes; JSON Studio and JWT Inspector
-  are functional and the remaining modules are explicit scaffolds
+- Full workspace shell with six module routes; JSON Studio, JWT Inspector, and
+  the API request editor are functional and the remaining modules are explicit
+  scaffolds
 - JSON Studio with a CodeMirror 6 editor, format, minify, validate, indentation,
   copy, swap, and clear actions
 - Worker-backed JSON parsing with a synchronous fallback for environments
@@ -127,6 +129,9 @@ Implemented:
 - Collapsible typed JSON tree with node/depth stats and bounded rendering
 - JWT Inspector with local header/payload/signature decoding, registered-claim
   inspection, lifetime warnings, and explicit unverified-signature messaging
+- API Builder request editor with method, URL, enabled/disabled params and
+  headers, a content-type-aware body, validation, and reset; requests are not
+  sent yet
 - DevTools panel registration and inspected-tab context
 - Typed background messaging and page-metadata contract
 - Storage wrapper with a dev fallback outside extensions

@@ -5,7 +5,10 @@
 - Project root: `Desktop/DevLens`. The Git root is `/mnt/c/Users/tabiq` (the Windows home directory), not this folder, and it has no commits.
 - Never run `git add -A`, `git reset`, force-push, or commit from the home repo. If asked to commit, stage explicit paths under `Desktop/DevLens` only.
 - Use npm (Node >= 22.12; developed on Node 24.21 / npm 11.19). `package-lock.json` is authoritative; do not switch package managers.
-- JSON Studio is implemented and tested; treat it as the reference feature. Network, JWT, API, Ollama, and Page Inspector remain scaffolds unless their milestone is explicitly requested.
+- JSON Studio, JWT Inspector, and the API Builder request editor (Stage 3A) are
+  implemented and tested; treat JSON Studio as the reference feature. Network,
+  API request execution, Ollama, and Page Inspector remain scaffolds unless
+  their milestone is explicitly requested.
 
 ## Commands
 
@@ -37,7 +40,7 @@
 - Permissions are intentionally minimal (`storage` only). Do not add permissions or host access without updating `manifest.json`, `docs/ARCHITECTURE.md`, and tests.
 - Version lives in both `package.json` and `public/manifest.json`; `src/manifest.test.ts` fails if they drift.
 - Strict TS uses `noUncheckedIndexedAccess` and `verbatimModuleSyntax`; use `import type` for type-only imports.
-- No fake data or believable placeholder UI. Unshipped module screens stay explicitly labelled scaffolds until their milestone lands; JSON Studio is the functional exception.
+- No fake data or believable placeholder UI. Unshipped module screens stay explicitly labelled scaffolds until their milestone lands; JSON Studio, JWT Inspector, and the API request editor are functional exceptions.
 - Tests run in two Vitest projects: `node` for pure logic (including `json-core`), `dom` (jsdom) for components/storage and the JSON tree/screen. Mock `chrome` with `vi.stubGlobal`; cleanup is in `src/test/setup.ts`.
 
 ## Gotchas

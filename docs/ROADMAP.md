@@ -81,7 +81,25 @@ Chrome/Edge/Brave manual smoke test remains a release task.
 
 ## Milestone 3 — API Builder
 
-- Request editor for method, URL, query, headers, auth, and body.
+### Stage 3A — Request editor (implemented)
+
+Shipped:
+
+- In-memory request draft with method, URL, enabled/disabled query parameters,
+  enabled/disabled headers, and a body with a content-type selection.
+- Method selector (GET, POST, PUT, PATCH, DELETE), absolute http/https URL
+  validation, add/remove/reset controls, and explicit empty states.
+- Clear messaging that sending, host permissions, responses, collections, and
+  history are not part of this stage.
+- Pure request-model helpers and focused model/screen tests.
+- No network requests, persistence, telemetry, or new permissions.
+
+Known limitations: the Send control is intentionally disabled; auth and body
+options beyond content type are not implemented; nothing is saved between
+sessions.
+
+### Stage 3B — Request execution (planned)
+
 - Send through the background worker with timeout and cancellation.
 - Request optional host permissions per origin at send time.
 - Save collections and environments in `chrome.storage.local`.

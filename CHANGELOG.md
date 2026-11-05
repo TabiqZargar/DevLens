@@ -27,12 +27,17 @@ semantic versioning.
 - Explicit unverified-signature messaging and an empty-signature state.
 - JWT core, claims, and screen tests, including deterministic claim-clock and
   no-network checks.
+- API Builder request editor with method selection, absolute URL validation,
+  enabled/disabled query parameter and header rows, a content-type-aware body
+  editor, reset, and explicit empty states.
+- Pure API request-model helpers and focused model/screen tests covering row
+  normalization, query strings, URL validation, and no network or storage use.
 
 ### Changed
 
 - Added minimal CodeMirror 6 dependencies and `worker.format: "es"` to Vite.
-- Updated module metadata and documentation for JSON Studio, plus README,
-  architecture, roadmap, and agent instructions for JWT Inspector.
+- Updated module metadata and documentation for JSON Studio, JWT Inspector, and
+  the API Builder request editor.
 
 ### Notes
 
@@ -41,6 +46,9 @@ semantic versioning.
 - JWT tokens, decoded output, and claim results stay in memory for the active
   screen. Tokens are never persisted or transmitted, and signatures are not
   verified.
+- API request drafts, headers, and bodies stay in memory for the active screen.
+  Stage 3A never sends requests, requests host permissions, or stores
+  collections.
 - The JSON tree renders at most 100 children per container and 40 depth levels.
 - Automated tests, typecheck, build, and verification pass. The manual
   Chrome/Edge/Brave smoke test is still pending.
