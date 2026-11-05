@@ -10,6 +10,7 @@ interface Manifest {
   manifest_version: number;
   version: string;
   permissions: string[];
+  optional_host_permissions?: string[];
   host_permissions?: string[];
   background: { service_worker: string; type: string };
   action: { default_popup: string };
@@ -37,6 +38,10 @@ describe("Manifest V3 contract", () => {
     expect(manifest.manifest_version).toBe(3);
     expect(manifest.permissions).toEqual(["storage"]);
     expect(manifest.host_permissions).toBeUndefined();
+    expect(manifest.optional_host_permissions).toEqual([
+      "http://*/*",
+      "https://*/*",
+    ]);
     expect(manifest.background.type).toBe("module");
     expect(manifest.action.default_popup).toBe("popup.html");
     expect(manifest.devtools_page).toBe("devtools.html");

@@ -40,9 +40,27 @@ semantic versioning.
   validation.
 - Contract, background-router, and sender tests asserting no network request is
   made.
+- Background HTTP execution for validated API requests, including method, URL,
+  enabled query parameters, headers, and supported body content types.
+- Bounded request timeout (default 30 s) and cancellation via
+  `devlens:api-cancel`, with distinct timeout and aborted results.
+- Structured success results with status, status text, response headers, body
+  text, duration, content type, and final URL; HTTP error statuses are
+  preserved as responses.
+- Structured `permission-denied`, `network-error`, `timeout`, `aborted`,
+  `unsupported`, and `invalid-request` failures with fixed messages.
+- Optional host permissions for HTTP(S) origins, an origin-permission check
+  used by the background, and explicit permission helpers for the future Send
+  control.
+- Executor, router, permission, contract, and sender tests covering success,
+  query/header/body handling, timeouts, cancellation, HTTP errors, empty and
+  non-JSON bodies, missing permission, network failures, and sensitive-error
+  redaction.
 
 ### Changed
 
+- The background execution handler now performs a validated request instead of
+  returning `not-implemented`.
 - Background message handling now validates all incoming messages and always
   responds; unexpected failures return a fixed message instead of raw errors.
 - Added minimal CodeMirror 6 dependencies and `worker.format: "es"` to Vite.
@@ -58,9 +76,11 @@ semantic versioning.
   verified.
 - API request drafts, headers, and bodies stay in memory for the active screen.
   Stage 3A never sends requests, requests host permissions, or stores
-  collections. Stage 3B-1 adds only a typed execution contract and background
-  routing; the worker does not call `fetch`, no permission is requested, and
-  Send remains disabled.
+  collections. Stage 3B-1 added the typed execution contract and routing; Stage
+  3B-2 executes requests in the background only after checking optional origin
+  permission, never persists or logs request/response data, and still leaves
+  the Send control disabled until the response UI lands. Cancellation depends on
+  the service worker staying alive for the duration of the request.
 - The JSON tree renders at most 100 children per container and 40 depth levels.
 - Automated tests, typecheck, build, and verification pass. The manual
   Chrome/Edge/Brave smoke test is still pending.

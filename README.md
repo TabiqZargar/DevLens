@@ -8,9 +8,10 @@ This repository ships the extension foundation plus **JSON Studio**,
 **JWT Inspector**, and the **API Builder request editor**. JSON is formatted,
 minified, validated, and explored entirely on-device, JWTs are decoded and
 inspected without verification or network access, and API requests can be
-composed without being sent. None of these features upload or persist developer
-data. Network capture, API request execution and collections, Ollama, and Page
-Inspector remain scaffolded.
+composed without being sent from the editor. None of these features upload or
+persist developer data. Network capture, the API Send/response UI, collections,
+Ollama, and Page Inspector remain scaffolded; API execution exists in the
+service worker but is not yet wired to the editor.
 
 ## Stack
 
@@ -130,8 +131,10 @@ Implemented:
 - JWT Inspector with local header/payload/signature decoding, registered-claim
   inspection, lifetime warnings, and explicit unverified-signature messaging
 - API Builder request editor with method, URL, enabled/disabled params and
-  headers, a content-type-aware body, validation, and reset; requests are not
-  sent yet
+  headers, a content-type-aware body, validation, and reset
+- Background API execution with optional origin-permission checks, bounded
+  timeout, cancellation, response metadata/text, and structured errors; the
+  Send control and response UI are not wired yet
 - DevTools panel registration and inspected-tab context
 - Typed background messaging and page-metadata contract
 - Storage wrapper with a dev fallback outside extensions
@@ -142,7 +145,7 @@ Not implemented yet:
 
 - Network capture
 - JWT signature verification
-- API request sending or collections
+- API Send control, response UI, collections, and history
 - Ollama integration
 - Page Inspector and content-script registration
 - Firefox support (Chromium-only manifest and `chrome.*` APIs)

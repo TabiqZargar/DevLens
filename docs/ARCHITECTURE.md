@@ -110,12 +110,25 @@ lands.
 `api-execution.ts` defines the Stage 3B-1 execution contract. It builds a
 `devlens:api-execute` request from the normalized draft, validates every field
 on receipt, and guards structured responses. Requests carry the method, trimmed
-absolute http/https URL, enabled `{ key, value }` rows, and a body content type
-plus content. Responses are a discriminated union of success metadata or a
-named error code; malformed input returns a fixed `invalid-request` message and
-a usable request id when one is present. The module is pure and imports only
-the request model, so the background worker can use it without DOM or storage
-access. No `fetch` call, host permission, or persistence exists in this stage.
+absolute http/https URL, enabled `{ key, value }` rows, a body content type plus
+content, and a bounded timeout. Responses are a discriminated union of success
+data or a named error code; malformed input returns a fixed `invalid-request`
+message and a usable request id when one is present. The module is pure and
+imports only the request model, so the background worker can use it without DOM
+or storage access.
+
+Stage 3B-2 executes those requests in the background. The executor checks the
+origin permission with `chrome.permissions.contains` (never prompting), appends
+enabled query parameters, applies headers, sets the body content type unless
+overridden, and calls `fetch` with an `AbortController`. Timeouts use the request
+`timeoutMs` (default 30 s, bounded 1–120 s); `devlens:api-cancel` aborts an
+in-flight request by id while the worker is alive. Success results include
+status, status text, response headers, body text, duration, content type, and
+final URL, and HTTP 4xx/5xx are returned as successful transports. Failures are
+fixed `permission-denied`, `network-error`, `timeout`, `aborted`, `unsupported`,
+or `invalid-request` results. The executor never persists or logs request or
+response data. The Send control and response UI remain out of scope, so
+permission prompting is deferred to that future user-initiated control.
 
 ### DevTools
 
@@ -129,12 +142,16 @@ for these APIs beyond `devtools_page` in the manifest.
 
 `src/background/index.ts` registers a runtime message listener and delegates to
 `handleBackgroundMessage` in `message-handler.ts`. The router sends ping
-requests to the ping handler, `devlens:api-execute` messages to the execution
-handler (which validates the payload and currently returns `not-implemented`),
-and everything else to `{ ok: false, error: "Unsupported request." }`. The
-listener always answers asynchronously and converts unexpected failures to a
-fixed message so raw errors are not exposed. The worker contains no React or
-DOM code. It must remain usable where `window` and `localStorage` do not exist.
+requests to the ping handler, `devlens:api-execute` messages to
+`executeApiRequest`, `devlens:api-cancel` messages to `cancelApiExecution`, and
+everything else to `{ ok: false, error: "Unsupported request." }`. Malformed
+execution and cancellation messages return fixed `invalid-request` results.
+`api-execution.ts` in the background builds the request, checks origin
+permission, runs `fetch` with a timeout and an abort signal, and reads the
+response body as text. The listener always answers asynchronously and converts
+unexpected failures to a fixed message so raw errors are not exposed. The
+worker contains no React or DOM code. It must remain usable where `window` and
+`localStorage` do not exist.
 
 ### Content script
 
@@ -186,9 +203,13 @@ script. The background responds to `devlens:ping`; content responds to
 The API execution contract lives in `src/features/api/api-execution.ts` rather
 than `src/shared` so the shared layer does not depend on feature code; the
 background imports it as a pure module. `src/services/api-execution.ts` wraps
-`chrome.runtime.sendMessage` for `devlens:api-execute`, verifies the response
-shape and request id, and returns structured `runtime-unavailable`,
-`runtime-error`, or `invalid-response` failures without echoing raw errors.
+`chrome.runtime.sendMessage` for `devlens:api-execute` and
+`devlens:api-cancel`, verifies the response shape and request id, and returns
+structured `runtime-unavailable`, `runtime-error`, or `invalid-response`
+failures without echoing raw errors. `src/services/permissions.ts` wraps
+`chrome.permissions.contains` and `chrome.permissions.request` for origin
+patterns; only the background `contains` check runs automatically, while
+`request` is reserved for a future user-initiated Send control.
 
 `src/services/storage.ts` wraps `chrome.storage.local` and falls back to
 `window.localStorage` when running under the Vite dev server. It guards both
@@ -197,13 +218,17 @@ live under the `devlens:settings` key.
 
 ## Permissions and cross-browser support
 
-Current permissions: `storage` only.
+Current permissions: `storage` only. `optional_host_permissions` declares
+`http://*/*` and `https://*/*` so a future user-initiated Send control can
+request a single origin without granting access up front.
 
 - `chrome.tabs.create` for opening the workspace does not require `tabs`.
 - DevTools panels require only the `devtools_page` manifest key.
 - The content script is built but not registered, so no host access is granted.
-- Future API Builder requests will need optional host permissions, requested
-  only when a user sends to a new origin.
+- API Builder execution checks `chrome.permissions.contains` for the request
+  origin and returns `permission-denied` rather than prompting from the service
+  worker. The Send control must call `requestOriginPermission` from a user
+  gesture before executing.
 - Future Page Inspector work should use `activeTab` or a user-triggered injection
   path rather than broad always-on host access.
 

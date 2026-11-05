@@ -5,15 +5,21 @@ import {
   type RuntimeResponse,
 } from "../shared/messaging";
 import {
+  API_CANCEL_MESSAGE,
   API_EXECUTION_MESSAGE,
+  isApiCancelMessage,
   isApiExecutionMessage,
+  parseApiCancelRequest,
   parseApiExecutionRequest,
+  type ApiCancelResponse,
   type ApiExecutionResponse,
 } from "../features/api/api-execution";
+import { cancelApiExecution, executeApiRequest } from "./api-execution";
 
 export type BackgroundResponse =
   | RuntimeResponse<unknown>
-  | ApiExecutionResponse;
+  | ApiExecutionResponse
+  | ApiCancelResponse;
 
 export async function handleRuntimeMessage(
   request: RuntimeRequest,
@@ -45,13 +51,29 @@ export async function handleApiExecutionMessage(
     };
   }
 
+  return executeApiRequest(parsed.request);
+}
+
+export async function handleApiCancelMessage(
+  message: unknown,
+): Promise<ApiCancelResponse> {
+  const parsed = parseApiCancelRequest(message);
+
+  if (!parsed.ok) {
+    return {
+      type: API_CANCEL_MESSAGE,
+      requestId: parsed.requestId,
+      ok: false,
+      error: parsed.error,
+    };
+  }
+
   return {
-    type: API_EXECUTION_MESSAGE,
+    type: API_CANCEL_MESSAGE,
     requestId: parsed.request.requestId,
-    ok: false,
-    error: {
-      code: "not-implemented",
-      message: "Request execution is not implemented yet.",
+    ok: true,
+    data: {
+      cancelled: cancelApiExecution(parsed.request.requestId),
     },
   };
 }
@@ -61,6 +83,10 @@ export async function handleBackgroundMessage(
 ): Promise<BackgroundResponse> {
   if (isApiExecutionMessage(message)) {
     return handleApiExecutionMessage(message);
+  }
+
+  if (isApiCancelMessage(message)) {
+    return handleApiCancelMessage(message);
   }
 
   if (isRuntimeRequest(message)) {

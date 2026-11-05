@@ -11,6 +11,11 @@ import {
 } from "./api-request";
 
 export const API_EXECUTION_MESSAGE = "devlens:api-execute" as const;
+export const API_CANCEL_MESSAGE = "devlens:api-cancel" as const;
+
+export const API_EXECUTION_DEFAULT_TIMEOUT_MS = 30_000;
+export const API_EXECUTION_MIN_TIMEOUT_MS = 1_000;
+export const API_EXECUTION_MAX_TIMEOUT_MS = 120_000;
 
 export interface ApiExecutionRequest {
   type: typeof API_EXECUTION_MESSAGE;
@@ -20,6 +25,7 @@ export interface ApiExecutionRequest {
   params: NormalizedRow[];
   headers: NormalizedRow[];
   body: RequestBodyDraft;
+  timeoutMs: number;
 }
 
 export type ApiExecutionErrorCode =
@@ -27,11 +33,21 @@ export type ApiExecutionErrorCode =
   | "not-implemented"
   | "runtime-unavailable"
   | "invalid-response"
-  | "runtime-error";
+  | "runtime-error"
+  | "permission-denied"
+  | "network-error"
+  | "timeout"
+  | "aborted"
+  | "unsupported";
 
 export interface ApiExecutionError {
   code: ApiExecutionErrorCode;
   message: string;
+}
+
+export interface ApiResponseHeader {
+  name: string;
+  value: string;
 }
 
 export interface ApiResponseMetadata {
@@ -40,6 +56,8 @@ export interface ApiResponseMetadata {
   durationMs: number;
   contentType: string | null;
   finalUrl: string;
+  headers: ApiResponseHeader[];
+  body: string;
 }
 
 export type ApiExecutionResponse =
@@ -64,12 +82,44 @@ export type ApiExecutionParseResult =
       error: ApiExecutionError;
     };
 
+export interface ApiCancelRequest {
+  type: typeof API_CANCEL_MESSAGE;
+  requestId: string;
+}
+
+export type ApiCancelParseResult =
+  | { ok: true; request: ApiCancelRequest }
+  | {
+      ok: false;
+      requestId: string | null;
+      error: ApiExecutionError;
+    };
+
+export type ApiCancelResponse =
+  | {
+      type: typeof API_CANCEL_MESSAGE;
+      requestId: string;
+      ok: true;
+      data: { cancelled: boolean };
+    }
+  | {
+      type: typeof API_CANCEL_MESSAGE;
+      requestId: string | null;
+      ok: false;
+      error: ApiExecutionError;
+    };
+
 const API_EXECUTION_ERROR_CODES: readonly ApiExecutionErrorCode[] = [
   "invalid-request",
   "not-implemented",
   "runtime-unavailable",
   "invalid-response",
   "runtime-error",
+  "permission-denied",
+  "network-error",
+  "timeout",
+  "aborted",
+  "unsupported",
 ];
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -149,9 +199,23 @@ function parseBody(value: unknown): RequestBodyDraft | null {
   return { contentType, content };
 }
 
+function parseTimeout(value: unknown): number | null {
+  if (
+    typeof value !== "number" ||
+    !Number.isInteger(value) ||
+    value < API_EXECUTION_MIN_TIMEOUT_MS ||
+    value > API_EXECUTION_MAX_TIMEOUT_MS
+  ) {
+    return null;
+  }
+
+  return value;
+}
+
 export function createApiExecutionRequest(
   draft: ApiRequestDraft,
   requestId: string,
+  timeoutMs: number = API_EXECUTION_DEFAULT_TIMEOUT_MS,
 ): ApiExecutionRequest {
   const body: RequestBodyDraft =
     draft.body.contentType === "none"
@@ -169,6 +233,7 @@ export function createApiExecutionRequest(
     params: normalizeRows(draft.params),
     headers: normalizeRows(draft.headers),
     body,
+    timeoutMs,
   };
 }
 
@@ -213,6 +278,9 @@ export function parseApiExecutionRequest(
   const body = parseBody(record.body);
   if (!body) return invalidRequest(requestId);
 
+  const timeoutMs = parseTimeout(record.timeoutMs);
+  if (timeoutMs === null) return invalidRequest(requestId);
+
   return {
     ok: true,
     request: {
@@ -223,6 +291,7 @@ export function parseApiExecutionRequest(
       params,
       headers,
       body,
+      timeoutMs,
     },
   };
 }
@@ -231,6 +300,60 @@ export function isApiExecutionRequest(
   value: unknown,
 ): value is ApiExecutionRequest {
   return parseApiExecutionRequest(value).ok;
+}
+
+export function isApiCancelMessage(
+  value: unknown,
+): value is { type: typeof API_CANCEL_MESSAGE } {
+  const record = asRecord(value);
+  return record !== null && record.type === API_CANCEL_MESSAGE;
+}
+
+function invalidCancel(
+  requestId: string | null,
+): ApiCancelParseResult {
+  return {
+    ok: false,
+    requestId,
+    error: {
+      code: "invalid-request",
+      message: "Malformed API cancellation request.",
+    },
+  };
+}
+
+export function parseApiCancelRequest(
+  value: unknown,
+): ApiCancelParseResult {
+  const record = asRecord(value);
+
+  if (!record || record.type !== API_CANCEL_MESSAGE) {
+    return invalidCancel(record ? readRequestId(record) : null);
+  }
+
+  const requestId = readRequestId(record);
+  if (requestId === null) return invalidCancel(null);
+
+  return {
+    ok: true,
+    request: { type: API_CANCEL_MESSAGE, requestId },
+  };
+}
+
+export function isApiCancelRequest(
+  value: unknown,
+): value is ApiCancelRequest {
+  return parseApiCancelRequest(value).ok;
+}
+
+function isResponseHeader(value: unknown): boolean {
+  const record = asRecord(value);
+
+  return (
+    record !== null &&
+    typeof record.name === "string" &&
+    typeof record.value === "string"
+  );
 }
 
 function isApiExecutionError(
@@ -281,8 +404,44 @@ export function isApiExecutionResponse(
       Number.isFinite(data.durationMs) &&
       (data.contentType === null ||
         typeof data.contentType === "string") &&
-      typeof data.finalUrl === "string"
+      typeof data.finalUrl === "string" &&
+      Array.isArray(data.headers) &&
+      data.headers.every(isResponseHeader) &&
+      typeof data.body === "string"
     );
+  }
+
+  if (record.ok === false) {
+    return isApiExecutionError(record.error);
+  }
+
+  return false;
+}
+
+export function isApiCancelResponse(
+  value: unknown,
+): value is ApiCancelResponse {
+  const record = asRecord(value);
+
+  if (
+    !record ||
+    record.type !== API_CANCEL_MESSAGE ||
+    (typeof record.requestId !== "string" &&
+      record.requestId !== null)
+  ) {
+    return false;
+  }
+
+  if (record.ok === true) {
+    if (
+      typeof record.requestId !== "string" ||
+      record.requestId.trim().length === 0
+    ) {
+      return false;
+    }
+
+    const data = asRecord(record.data);
+    return data !== null && typeof data.cancelled === "boolean";
   }
 
   if (record.ok === false) {

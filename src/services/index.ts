@@ -1,6 +1,14 @@
 export { loadSettings, saveSettings } from "./settings";
 export { sendRuntimeMessage } from "./messaging";
-export { sendApiExecutionMessage } from "./api-execution";
+export {
+  sendApiCancelMessage,
+  sendApiExecutionMessage,
+} from "./api-execution";
+export {
+  hasOriginPermission,
+  originPatternForUrl,
+  requestOriginPermission,
+} from "./permissions";
 export {
   getExtensionVersion,
   isExtensionRuntime,

@@ -1,11 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  API_CANCEL_MESSAGE,
   API_EXECUTION_MESSAGE,
   createApiExecutionRequest,
   type ApiExecutionRequest,
 } from "../features/api/api-execution";
 import { createRequestDraft } from "../features/api/api-request";
-import { sendApiExecutionMessage } from "./api-execution";
+import {
+  sendApiCancelMessage,
+  sendApiExecutionMessage,
+} from "./api-execution";
 
 function executionRequest(): ApiExecutionRequest {
   const draft = createRequestDraft();
@@ -54,6 +58,8 @@ describe("API execution sender", () => {
         durationMs: 42,
         contentType: "application/json",
         finalUrl: request.url,
+        headers: [{ name: "content-type", value: "application/json" }],
+        body: '{"ok":true}',
       },
     };
     const sendMessage = vi.fn().mockResolvedValue(success);
@@ -150,5 +156,65 @@ describe("API execution sender", () => {
     await sendApiExecutionMessage(executionRequest());
 
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("API cancellation sender", () => {
+  it("returns a runtime-unavailable failure when no extension runtime exists", async () => {
+    vi.stubGlobal("chrome", undefined);
+
+    const response = await sendApiCancelMessage("req-1");
+
+    expect(response).toEqual({
+      type: API_CANCEL_MESSAGE,
+      requestId: "req-1",
+      ok: false,
+      error: {
+        code: "runtime-unavailable",
+        message: "Extension runtime unavailable.",
+      },
+    });
+  });
+
+  it("sends and validates a cancellation response", async () => {
+    const success = {
+      type: API_CANCEL_MESSAGE,
+      requestId: "req-1",
+      ok: true,
+      data: { cancelled: true },
+    };
+    const sendMessage = vi.fn().mockResolvedValue(success);
+    stubChrome(sendMessage);
+
+    const response = await sendApiCancelMessage("  req-1  ");
+
+    expect(sendMessage).toHaveBeenCalledWith({
+      type: API_CANCEL_MESSAGE,
+      requestId: "req-1",
+    });
+    expect(response).toEqual(success);
+  });
+
+  it("rejects a cancellation response for a different request", async () => {
+    stubChrome(
+      vi.fn().mockResolvedValue({
+        type: API_CANCEL_MESSAGE,
+        requestId: "req-2",
+        ok: true,
+        data: { cancelled: true },
+      }),
+    );
+
+    const response = await sendApiCancelMessage("req-1");
+
+    expect(response).toEqual({
+      type: API_CANCEL_MESSAGE,
+      requestId: "req-1",
+      ok: false,
+      error: {
+        code: "invalid-response",
+        message: "The background worker returned an invalid response.",
+      },
+    });
   });
 });

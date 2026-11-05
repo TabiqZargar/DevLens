@@ -1,10 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
+  API_CANCEL_MESSAGE,
+  API_EXECUTION_DEFAULT_TIMEOUT_MS,
   API_EXECUTION_MESSAGE,
   createApiExecutionRequest,
+  isApiCancelMessage,
+  isApiCancelRequest,
+  isApiCancelResponse,
   isApiExecutionMessage,
   isApiExecutionRequest,
   isApiExecutionResponse,
+  parseApiCancelRequest,
   parseApiExecutionRequest,
 } from "./api-execution";
 import { createRequestDraft, createRow } from "./api-request";
@@ -21,6 +27,7 @@ function validMessage(): Record<string, unknown> {
       contentType: "application/json",
       content: '{"name":"devlens"}',
     },
+    timeoutMs: API_EXECUTION_DEFAULT_TIMEOUT_MS,
   };
 }
 
@@ -47,6 +54,7 @@ describe("API execution contract", () => {
       params: [{ key: "page", value: "2" }],
       headers: [{ key: "Accept", value: "*/*" }],
       body: { contentType: "none", content: "" },
+      timeoutMs: API_EXECUTION_DEFAULT_TIMEOUT_MS,
     });
   });
 
@@ -64,6 +72,15 @@ describe("API execution contract", () => {
       contentType: "application/json",
       content: '{"ok":true}',
     });
+  });
+
+  it("accepts an explicit bounded timeout", () => {
+    const draft = createRequestDraft();
+    draft.url = "https://api.example.com/items";
+
+    const request = createApiExecutionRequest(draft, "req-1", 5_000);
+
+    expect(request.timeoutMs).toBe(5_000);
   });
 
   it("detects execution messages by their discriminator", () => {
@@ -96,6 +113,7 @@ describe("API execution contract", () => {
           contentType: "application/json",
           content: '{"name":"devlens"}',
         },
+        timeoutMs: API_EXECUTION_DEFAULT_TIMEOUT_MS,
       },
     });
   });
@@ -170,6 +188,11 @@ describe("API execution contract", () => {
       "body content with a none content type",
       { body: { contentType: "none", content: "unexpected" } },
     ],
+    ["a missing timeout", { timeoutMs: undefined }],
+    ["a non-integer timeout", { timeoutMs: 1_500.5 }],
+    ["a timeout below the minimum", { timeoutMs: 999 }],
+    ["a timeout above the maximum", { timeoutMs: 120_001 }],
+    ["a non-numeric timeout", { timeoutMs: "30000" }],
   ])("rejects %s", (_label, patch) => {
     const result = parseApiExecutionRequest({
       ...validMessage(),
@@ -199,6 +222,8 @@ describe("API execution contract", () => {
           durationMs: 42,
           contentType: "application/json",
           finalUrl: "https://api.example.com/items",
+          headers: [{ name: "content-type", value: "application/json" }],
+          body: '{"ok":true}',
         },
       }),
     ).toBe(true);
@@ -252,6 +277,8 @@ describe("API execution contract", () => {
           durationMs: 42,
           contentType: null,
           finalUrl: "https://api.example.com/items",
+          headers: [],
+          body: "",
         },
       },
     ],
@@ -267,6 +294,8 @@ describe("API execution contract", () => {
           durationMs: Number.NaN,
           contentType: null,
           finalUrl: "https://api.example.com/items",
+          headers: [],
+          body: "",
         },
       },
     ],
@@ -291,10 +320,140 @@ describe("API execution contract", () => {
           durationMs: 42,
           contentType: null,
           finalUrl: "https://api.example.com/items",
+          headers: [],
+          body: "",
+        },
+      },
+    ],
+    [
+      "non-array response headers",
+      {
+        type: API_EXECUTION_MESSAGE,
+        requestId: "req-1",
+        ok: true,
+        data: {
+          status: 200,
+          statusText: "OK",
+          durationMs: 42,
+          contentType: null,
+          finalUrl: "https://api.example.com/items",
+          headers: "content-type",
+          body: "",
+        },
+      },
+    ],
+    [
+      "malformed response headers",
+      {
+        type: API_EXECUTION_MESSAGE,
+        requestId: "req-1",
+        ok: true,
+        data: {
+          status: 200,
+          statusText: "OK",
+          durationMs: 42,
+          contentType: null,
+          finalUrl: "https://api.example.com/items",
+          headers: [{ name: "content-type", value: 1 }],
+          body: "",
+        },
+      },
+    ],
+    [
+      "a non-string response body",
+      {
+        type: API_EXECUTION_MESSAGE,
+        requestId: "req-1",
+        ok: true,
+        data: {
+          status: 200,
+          statusText: "OK",
+          durationMs: 42,
+          contentType: null,
+          finalUrl: "https://api.example.com/items",
+          headers: [],
+          body: null,
         },
       },
     ],
   ])("rejects a response with %s", (_label, value) => {
     expect(isApiExecutionResponse(value)).toBe(false);
+  });
+
+  it("parses and guards cancellation messages", () => {
+    expect(
+      parseApiCancelRequest({
+        type: API_CANCEL_MESSAGE,
+        requestId: "  req-1  ",
+      }),
+    ).toEqual({
+      ok: true,
+      request: { type: API_CANCEL_MESSAGE, requestId: "req-1" },
+    });
+
+    expect(
+      isApiCancelMessage({ type: API_CANCEL_MESSAGE, requestId: "req-1" }),
+    ).toBe(true);
+    expect(isApiCancelMessage({ type: API_EXECUTION_MESSAGE })).toBe(
+      false,
+    );
+    expect(isApiCancelRequest({ type: API_CANCEL_MESSAGE })).toBe(
+      false,
+    );
+
+    expect(
+      parseApiCancelRequest({
+        type: API_CANCEL_MESSAGE,
+        requestId: "   ",
+      }),
+    ).toEqual({
+      ok: false,
+      requestId: null,
+      error: {
+        code: "invalid-request",
+        message: "Malformed API cancellation request.",
+      },
+    });
+  });
+
+  it("guards cancellation responses", () => {
+    expect(
+      isApiCancelResponse({
+        type: API_CANCEL_MESSAGE,
+        requestId: "req-1",
+        ok: true,
+        data: { cancelled: true },
+      }),
+    ).toBe(true);
+
+    expect(
+      isApiCancelResponse({
+        type: API_CANCEL_MESSAGE,
+        requestId: null,
+        ok: false,
+        error: {
+          code: "invalid-request",
+          message: "Malformed API cancellation request.",
+        },
+      }),
+    ).toBe(true);
+
+    expect(
+      isApiCancelResponse({
+        type: API_CANCEL_MESSAGE,
+        requestId: "req-1",
+        ok: true,
+        data: { cancelled: "yes" },
+      }),
+    ).toBe(false);
+
+    expect(
+      isApiCancelResponse({
+        type: API_EXECUTION_MESSAGE,
+        requestId: "req-1",
+        ok: true,
+        data: { cancelled: true },
+      }),
+    ).toBe(false);
   });
 });

@@ -118,20 +118,45 @@ Shipped:
 - No `fetch`, no host permissions, no persistence, and the Send control remains
   disabled.
 
-Known limitations: execution is a contract only; the background does not
-perform requests and the response payload carries metadata types but no body.
+Known limitations: this stage only defined the contract and routing. Stage
+3B-2 replaces the `not-implemented` path with real background execution.
 
-#### Stage 3B-2 — Live requests (planned)
+#### Stage 3B-2 — Background HTTP execution (implemented)
 
-- Execute requests in the background worker with timeout and cancellation.
-- Request optional host permissions per origin at send time.
-- Render status, headers, body, and timing in the API Builder screen; enable
-  Send.
+Shipped:
+
+- Service-worker `fetch` execution from validated requests: method, URL,
+  enabled query parameters, enabled headers, and supported body content types.
+  Body content type is applied unless the caller supplies a `Content-Type`
+  header; `none` bodies send no body.
+- Bounded request timeout (default 30 s, 1–120 s allowed) validated by the
+  contract and enforced with `AbortController`.
+- Cancellation through `devlens:api-cancel` while the worker is alive, with
+  timeout and cancellation reported separately.
+- Structured success responses containing request id, HTTP status and status
+  text, response headers, body text, duration, content type, and final URL.
+  HTTP 4xx/5xx responses are preserved as successful transports.
+- Structured failures for `permission-denied`, `network-error`, `timeout`,
+  `aborted`, `unsupported` (for example a GET with a body), and
+  `invalid-request`, all with fixed non-leaking messages. Empty and non-JSON
+  response bodies are returned as text.
+- Optional host permissions for `http://*/*` and `https://*/*`; the background
+  checks `chrome.permissions.contains` before fetching and never prompts.
+  `requestOriginPermission` exists for the future user-initiated Send control.
+- No persistence, logging, request replay, or backend service.
+
+Known limitations: the Send control and response UI are not implemented, so
+permission prompting is deferred; cancellation only works while the service
+worker remains alive; response bodies are buffered as text with no size cap;
+redirect policy, streaming, retries, collections, environments, and history
+remain future work.
+
+Remaining API Builder work:
+
+- Wire Send and response rendering, requesting origin permission from the
+  user-initiated control before execution.
 - Save collections and environments in `chrome.storage.local`.
 - Copy as cURL/fetch; replay history.
-
-Acceptance: requests work across origins only after explicit permission; secrets
-are never synced; permission denial produces an actionable error.
 
 ## Milestone 4 — Local AI Assistant
 

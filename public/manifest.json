@@ -26,5 +26,6 @@
     "type": "module"
   },
   "devtools_page": "devtools.html",
-  "permissions": ["storage"]
+  "permissions": ["storage"],
+  "optional_host_permissions": ["http://*/*", "https://*/*"]
 }

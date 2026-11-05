@@ -5,10 +5,11 @@
 - Project root: `Desktop/DevLens`. The Git root is `/mnt/c/Users/tabiq` (the Windows home directory), not this folder, and it has no commits.
 - Never run `git add -A`, `git reset`, force-push, or commit from the home repo. If asked to commit, stage explicit paths under `Desktop/DevLens` only.
 - Use npm (Node >= 22.12; developed on Node 24.21 / npm 11.19). `package-lock.json` is authoritative; do not switch package managers.
-- JSON Studio, JWT Inspector, and the API Builder request editor (Stage 3A) are
-  implemented and tested; treat JSON Studio as the reference feature. Network,
-  API request execution, Ollama, and Page Inspector remain scaffolds unless
-  their milestone is explicitly requested.
+- JSON Studio, JWT Inspector, the API Builder request editor (Stage 3A), and
+  background request execution (Stage 3B-2) are implemented and tested; the API
+  Send/response UI remains unwired. Network capture, collections, Ollama, and
+  Page Inspector remain scaffolds unless their milestone is explicitly
+  requested. Treat JSON Studio as the reference feature.
 
 ## Commands
 
@@ -37,7 +38,10 @@
 
 - Tailwind v4 is CSS-first: tokens and base styles live in `src/styles/index.css`; there is no `tailwind.config.*`. Use the existing `cn` helper and components.
 - No icon, font, or animation libraries. Icons are inline SVG in `src/components/icons.tsx`; fonts are system stacks (MV3 CSP allows no remote assets). CodeMirror is the only editor dependency.
-- Permissions are intentionally minimal (`storage` only). Do not add permissions or host access without updating `manifest.json`, `docs/ARCHITECTURE.md`, and tests.
+- Active permissions are intentionally minimal (`storage` only).
+  `optional_host_permissions` declares HTTP(S) origins for user-initiated API
+  sends. Do not add permissions or host access without updating
+  `manifest.json`, `docs/ARCHITECTURE.md`, and tests.
 - Version lives in both `package.json` and `public/manifest.json`; `src/manifest.test.ts` fails if they drift.
 - Strict TS uses `noUncheckedIndexedAccess` and `verbatimModuleSyntax`; use `import type` for type-only imports.
 - No fake data or believable placeholder UI. Unshipped module screens stay explicitly labelled scaffolds until their milestone lands; JSON Studio, JWT Inspector, and the API request editor are functional exceptions.

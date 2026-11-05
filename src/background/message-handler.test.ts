@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { API_EXECUTION_MESSAGE } from "../features/api/api-execution";
 import {
+  API_CANCEL_MESSAGE,
+  API_EXECUTION_MESSAGE,
+  isApiExecutionResponse,
+} from "../features/api/api-execution";
+import {
+  handleApiCancelMessage,
   handleApiExecutionMessage,
   handleBackgroundMessage,
   handleRuntimeMessage,
@@ -15,10 +20,12 @@ function executableMessage(): Record<string, unknown> {
     params: [],
     headers: [],
     body: { contentType: "none", content: "" },
+    timeoutMs: 30_000,
   };
 }
 
 afterEach(() => {
+  vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
 
@@ -64,17 +71,41 @@ describe("background message router", () => {
     });
   });
 
-  it("reports that execution is not implemented yet", async () => {
+  it("routes execution messages through the executor", async () => {
+    vi.stubGlobal("chrome", {
+      permissions: { contains: vi.fn(async () => true) },
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        status: 200,
+        statusText: "OK",
+        url: "https://api.example.com/items",
+        headers: new Headers({ "content-type": "text/plain" }),
+        text: async () => "hello",
+      })),
+    );
+
     const response = await handleBackgroundMessage(executableMessage());
 
-    expect(response).toEqual({
-      type: API_EXECUTION_MESSAGE,
+    expect(response.ok).toBe(true);
+    if (response.ok && isApiExecutionResponse(response)) {
+      expect(response.data.status).toBe(200);
+      expect(response.data.body).toBe("hello");
+    }
+  });
+
+  it("routes cancellation messages to the executor", async () => {
+    const response = await handleApiCancelMessage({
+      type: API_CANCEL_MESSAGE,
       requestId: "req-1",
-      ok: false,
-      error: {
-        code: "not-implemented",
-        message: "Request execution is not implemented yet.",
-      },
+    });
+
+    expect(response).toEqual({
+      type: API_CANCEL_MESSAGE,
+      requestId: "req-1",
+      ok: true,
+      data: { cancelled: false },
     });
   });
 
