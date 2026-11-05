@@ -107,6 +107,16 @@ stay only in component state; nothing is persisted, transmitted, logged, or
 cached. The Send control is deliberately disabled until the execution stage
 lands.
 
+`api-execution.ts` defines the Stage 3B-1 execution contract. It builds a
+`devlens:api-execute` request from the normalized draft, validates every field
+on receipt, and guards structured responses. Requests carry the method, trimmed
+absolute http/https URL, enabled `{ key, value }` rows, and a body content type
+plus content. Responses are a discriminated union of success metadata or a
+named error code; malformed input returns a fixed `invalid-request` message and
+a usable request id when one is present. The module is pure and imports only
+the request model, so the background worker can use it without DOM or storage
+access. No `fetch` call, host permission, or persistence exists in this stage.
+
 ### DevTools
 
 `devtools.html` runs `src/devtools/index.ts`, which calls
@@ -118,8 +128,13 @@ for these APIs beyond `devtools_page` in the manifest.
 ### Background
 
 `src/background/index.ts` registers a runtime message listener and delegates to
-`message-handler.ts`. The worker contains no React or DOM code. It must remain
-usable where `window` and `localStorage` do not exist.
+`handleBackgroundMessage` in `message-handler.ts`. The router sends ping
+requests to the ping handler, `devlens:api-execute` messages to the execution
+handler (which validates the payload and currently returns `not-implemented`),
+and everything else to `{ ok: false, error: "Unsupported request." }`. The
+listener always answers asynchronously and converts unexpected failures to a
+fixed message so raw errors are not exposed. The worker contains no React or
+DOM code. It must remain usable where `window` and `localStorage` do not exist.
 
 ### Content script
 
@@ -161,10 +176,19 @@ committed.
 
 ## Messaging and storage
 
-`src/shared/messaging.ts` owns request/response types and guards. The background
-responds to `devlens:ping`; content responds to `devlens:page-metadata`.
-`src/services/messaging.ts` wraps `chrome.runtime.sendMessage` and converts
-delivery failures into a structured `{ ok: false, error }` result.
+`src/shared/messaging.ts` owns requests that cross the shared boundary:
+`devlens:ping` to the background and `devlens:page-metadata` to the content
+script. The background responds to `devlens:ping`; content responds to
+`devlens:page-metadata`. `src/services/messaging.ts` wraps
+`chrome.runtime.sendMessage` and converts delivery failures into a structured
+`{ ok: false, error }` result.
+
+The API execution contract lives in `src/features/api/api-execution.ts` rather
+than `src/shared` so the shared layer does not depend on feature code; the
+background imports it as a pure module. `src/services/api-execution.ts` wraps
+`chrome.runtime.sendMessage` for `devlens:api-execute`, verifies the response
+shape and request id, and returns structured `runtime-unavailable`,
+`runtime-error`, or `invalid-response` failures without echoing raw errors.
 
 `src/services/storage.ts` wraps `chrome.storage.local` and falls back to
 `window.localStorage` when running under the Vite dev server. It guards both

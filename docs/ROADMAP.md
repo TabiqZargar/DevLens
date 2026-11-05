@@ -98,10 +98,35 @@ Known limitations: the Send control is intentionally disabled; auth and body
 options beyond content type are not implemented; nothing is saved between
 sessions.
 
-### Stage 3B — Request execution (planned)
+### Stage 3B — Request execution
 
-- Send through the background worker with timeout and cancellation.
+#### Stage 3B-1 — Execution contract (implemented)
+
+Shipped:
+
+- Typed `devlens:api-execute` request/response contract in
+  `src/features/api/api-execution.ts`, built from the normalized request draft.
+- Runtime validation of methods, absolute http/https URLs, enabled rows, body
+  content types, and request ids, with fixed non-leaking error messages.
+- Background routing that distinguishes ping, execution, and unsupported
+  messages and returns a structured `not-implemented` error for valid execution
+  requests.
+- `sendApiExecutionMessage` service wrapper that validates the response shape
+  and request id, with structured `runtime-unavailable`, `runtime-error`, and
+  `invalid-response` failures.
+- Contract, router, and sender tests asserting no network request is made.
+- No `fetch`, no host permissions, no persistence, and the Send control remains
+  disabled.
+
+Known limitations: execution is a contract only; the background does not
+perform requests and the response payload carries metadata types but no body.
+
+#### Stage 3B-2 — Live requests (planned)
+
+- Execute requests in the background worker with timeout and cancellation.
 - Request optional host permissions per origin at send time.
+- Render status, headers, body, and timing in the API Builder screen; enable
+  Send.
 - Save collections and environments in `chrome.storage.local`.
 - Copy as cURL/fetch; replay history.
 

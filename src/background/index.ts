@@ -1,18 +1,12 @@
-import { isRuntimeRequest } from "../shared/messaging";
-import { handleRuntimeMessage } from "./message-handler";
+import { handleBackgroundMessage } from "./message-handler";
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (!isRuntimeRequest(message)) {
-    return false;
-  }
-
-  handleRuntimeMessage(message)
+  handleBackgroundMessage(message)
     .then(sendResponse)
-    .catch((error: unknown) => {
+    .catch(() => {
       sendResponse({
         ok: false,
-        error:
-          error instanceof Error ? error.message : "Unexpected background error.",
+        error: "Unexpected background error.",
       });
     });
 

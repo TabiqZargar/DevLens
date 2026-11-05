@@ -32,9 +32,19 @@ semantic versioning.
   editor, reset, and explicit empty states.
 - Pure API request-model helpers and focused model/screen tests covering row
   normalization, query strings, URL validation, and no network or storage use.
+- API execution contract (`devlens:api-execute`) with typed normalized request
+  and response payloads, runtime validation, and fixed non-leaking error codes.
+- Background routing for ping, execution, and unsupported messages, returning a
+  structured `not-implemented` result for valid execution requests.
+- `sendApiExecutionMessage` sender wrapper with response-shape and request-id
+  validation.
+- Contract, background-router, and sender tests asserting no network request is
+  made.
 
 ### Changed
 
+- Background message handling now validates all incoming messages and always
+  responds; unexpected failures return a fixed message instead of raw errors.
 - Added minimal CodeMirror 6 dependencies and `worker.format: "es"` to Vite.
 - Updated module metadata and documentation for JSON Studio, JWT Inspector, and
   the API Builder request editor.
@@ -48,7 +58,9 @@ semantic versioning.
   verified.
 - API request drafts, headers, and bodies stay in memory for the active screen.
   Stage 3A never sends requests, requests host permissions, or stores
-  collections.
+  collections. Stage 3B-1 adds only a typed execution contract and background
+  routing; the worker does not call `fetch`, no permission is requested, and
+  Send remains disabled.
 - The JSON tree renders at most 100 children per container and 40 depth levels.
 - Automated tests, typecheck, build, and verification pass. The manual
   Chrome/Edge/Brave smoke test is still pending.
