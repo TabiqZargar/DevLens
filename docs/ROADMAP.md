@@ -34,7 +34,7 @@ Acceptance: live requests appear without reloading the panel; clearing removes
 all rows; no request bodies are persisted to storage by default; panel remains
 responsive with at least 1,000 captured requests.
 
-## Milestone 2 — JSON Studio (implemented) and JWT Inspector (planned)
+## Milestone 2 — JSON Studio and JWT Inspector (implemented)
 
 ### JSON Studio
 
@@ -59,10 +59,25 @@ depth levels; JSON is intentionally not saved between sessions.
 
 ### JWT Inspector
 
-- Decode JWT header/payload, explain claims, and warn on `exp`/`nbf`/`iat`.
-- Optional local signature verification; never transmit tokens.
+Shipped:
 
-Acceptance: JWT claims and expiry states are correct against fixtures.
+- Decode compact-JWT header, payload, and signature segments locally, with
+  Base64URL, UTF-8, JSON, and object-shape validation.
+- Read-only syntax-highlighted header and payload JSON plus copy actions for
+  each decoded part and the raw signature segment.
+- Registered-claim inspection for `exp`, `iat`, `nbf`, `iss`, `sub`, `aud`, and
+  `jti`, with readable timestamps and local-clock lifetime states.
+- Expired, not-yet-valid, future-issued, missing, and non-standard claim states.
+- Persistent unverified-signature messaging; decoding is explicitly not proof
+  of authenticity.
+- No persistence, history, network, telemetry, or `eval`.
+
+Acceptance: JWT claims and expiry states are correct against fixtures; core,
+claim, and screen tests pass; `npm run typecheck`, `npm test`, `npm run build`,
+and `npm run verify` pass.
+
+Known limitations: cryptographic signature verification is not implemented. The
+Chrome/Edge/Brave manual smoke test remains a release task.
 
 ## Milestone 3 — API Builder
 

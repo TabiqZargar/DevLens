@@ -4,10 +4,12 @@ DevLens is a local-first developer toolkit that runs as a Manifest V3 browser
 extension in Brave, Chrome, and Edge. It is designed for inspecting, shaping,
 and testing web APIs without sending developer data to a backend.
 
-This repository ships the extension foundation plus **JSON Studio**, the first
-fully functional module. JSON is formatted, minified, validated, and explored
-entirely on-device; it is never uploaded or persisted. Network capture, JWT
-tools, the API builder, Ollama, and Page Inspector remain scaffolded.
+This repository ships the extension foundation plus **JSON Studio** and
+**JWT Inspector**, the first fully functional modules. JSON is formatted,
+minified, validated, and explored entirely on-device, and JWTs are decoded and
+inspected without verification or network access. Neither feature uploads or
+persists developer data. Network capture, the API builder, Ollama, and Page
+Inspector remain scaffolded.
 
 ## Stack
 
@@ -116,13 +118,15 @@ Implemented:
 
 - Manifest V3 output for Chromium browsers
 - Popup launcher with background-worker health check
-- Full workspace shell with six module routes; JSON Studio is functional and
-  the remaining modules are explicit scaffolds
+- Full workspace shell with six module routes; JSON Studio and JWT Inspector
+  are functional and the remaining modules are explicit scaffolds
 - JSON Studio with a CodeMirror 6 editor, format, minify, validate, indentation,
   copy, swap, and clear actions
 - Worker-backed JSON parsing with a synchronous fallback for environments
   without `Worker`
 - Collapsible typed JSON tree with node/depth stats and bounded rendering
+- JWT Inspector with local header/payload/signature decoding, registered-claim
+  inspection, lifetime warnings, and explicit unverified-signature messaging
 - DevTools panel registration and inspected-tab context
 - Typed background messaging and page-metadata contract
 - Storage wrapper with a dev fallback outside extensions
@@ -132,7 +136,7 @@ Implemented:
 Not implemented yet:
 
 - Network capture
-- JWT decoding/verification
+- JWT signature verification
 - API request sending or collections
 - Ollama integration
 - Page Inspector and content-script registration
@@ -155,6 +159,25 @@ object keys, node counts, and depth.
 - The tree renders at most 100 children per container and 40 depth levels, with
   explicit “show more” and depth-limit messaging, so large payloads stay
   navigable.
+
+Automated tests, typecheck, and the production build pass. The manual
+Chrome/Edge/Brave smoke test is still pending.
+
+## JWT Inspector
+
+Open the workspace, choose **JWT Inspector**, paste a compact JWT, and select
+**Decode** (or press `Ctrl`/`Cmd` + `Enter`). DevLens validates and decodes the
+three segments entirely on-device.
+
+- Header and payload are shown as read-only, syntax-highlighted JSON. Signature
+  bytes are shown separately, with copy actions for each part.
+- Registered claims `exp`, `iat`, `nbf`, `iss`, `sub`, `aud`, and `jti` are
+  explained. Numeric dates are rendered against the local clock with relative
+  lifetime text, and missing or non-standard values are flagged.
+- The signature is **never verified**. Decoding does not prove authenticity, and
+  the UI keeps that warning visible even for tokens with an empty signature.
+- Tokens, decoded output, and claim results stay in memory for the active
+  screen. There is no persistence, history, telemetry, or network request.
 
 Automated tests, typecheck, and the production build pass. The manual
 Chrome/Edge/Brave smoke test is still pending.

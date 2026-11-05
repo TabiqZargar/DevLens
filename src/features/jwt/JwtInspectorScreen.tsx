@@ -1,20 +1,564 @@
-import { ModuleScaffold } from "../../components/module-scaffold";
+import { useRef, useState } from "react";
+import {
+  AlertIcon,
+  Badge,
+  BracesIcon,
+  Button,
+  Card,
+  CheckIcon,
+  cn,
+  CopyIcon,
+  EmptyState,
+  KeyIcon,
+  Kbd,
+  LockIcon,
+  PageHeader,
+  ScanIcon,
+  TrashIcon,
+} from "../../components";
 import { getModuleDefinition } from "../../shared/modules";
+import { JsonCodeEditor } from "../json/json-editor";
+import {
+  decodeJwt,
+  type DecodedJwt,
+  type JwtJsonObject,
+} from "./jwt-core";
+import {
+  inspectClaims,
+  type ClaimInsight,
+  type ClaimStatus,
+  type JwtClaimReport,
+  type RegisteredClaimName,
+} from "./jwt-claims";
 
 const module = getModuleDefinition("jwt");
 
-export function JwtInspectorScreen() {
+const NOTICE_STYLES = {
+  success: "border-success/25 bg-success/[0.06]",
+  info: "border-accent/25 bg-accent/[0.06]",
+  warning: "border-warning/25 bg-warning/[0.06]",
+  error: "border-danger/25 bg-danger/[0.06]",
+} as const;
+
+const NOTICE_ICON_STYLES = {
+  success: "text-success",
+  info: "text-accent-strong",
+  warning: "text-warning",
+  error: "text-danger",
+} as const;
+
+const CLAIM_LABELS: Record<RegisteredClaimName, string> = {
+  exp: "Expiration time",
+  iat: "Issued at",
+  nbf: "Not before",
+  iss: "Issuer",
+  sub: "Subject",
+  aud: "Audience",
+  jti: "JWT ID",
+};
+
+const CLAIM_STATUS_LABELS: Record<ClaimStatus, string> = {
+  expired: "Expired",
+  "not-yet-valid": "Not yet valid",
+  "future-issued": "Future issued",
+  active: "Active",
+  present: "Present",
+  "non-standard": "Non-standard",
+  missing: "Missing",
+};
+
+interface DecodedState {
+  source: string;
+  decoded: DecodedJwt;
+  claims: JwtClaimReport;
+}
+
+type Notice = {
+  kind: "success" | "info" | "warning" | "error";
+  message: string;
+};
+
+async function copyToClipboard(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    // Fall back to the legacy copy path below.
+  }
+
+  try {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    const copied = document.execCommand("copy");
+    textarea.remove();
+    return copied;
+  } catch {
+    return false;
+  }
+}
+
+function prettyJson(value: JwtJsonObject): string {
+  return JSON.stringify(value, null, 2);
+}
+
+function claimBadgeVariant(status: ClaimStatus) {
+  if (status === "active") return "success" as const;
+  if (
+    status === "expired" ||
+    status === "not-yet-valid" ||
+    status === "future-issued" ||
+    status === "non-standard"
+  ) {
+    return "warning" as const;
+  }
+  return "outline" as const;
+}
+
+function NoticeBanner({ notice }: { notice: Notice }) {
+  const Icon =
+    notice.kind === "success"
+      ? CheckIcon
+      : notice.kind === "info"
+        ? BracesIcon
+        : AlertIcon;
+
   return (
-    <ModuleScaffold
-      module={module}
-      summary="Decode a token in place and understand its claims, lifetime, and trust boundaries."
-      planned={[
-        "Decode header and payload without contacting a server.",
-        "Surface exp, nbf, and iat values with clock-skew warnings.",
-        "Explain registered claims and flag malformed segments.",
-        "Copy individual claims or the decoded JSON.",
-      ]}
-      note="Signature verification will stay local and optional. DevLens will never transmit a token."
-    />
+    <div
+      role={notice.kind === "error" ? "alert" : "status"}
+      className={cn(
+        "flex items-start gap-3 rounded-xl border px-4 py-3",
+        NOTICE_STYLES[notice.kind],
+      )}
+    >
+      <Icon
+        className={cn(
+          "mt-0.5 size-4 shrink-0",
+          NOTICE_ICON_STYLES[notice.kind],
+        )}
+      />
+      <p className="text-sm font-medium text-ink">{notice.message}</p>
+    </div>
+  );
+}
+
+function ClaimRow({ claim }: { claim: ClaimInsight }) {
+  return (
+    <li className="grid gap-3 px-4 py-3 sm:grid-cols-[8rem_minmax(0,1fr)_auto] sm:items-start">
+      <div className="min-w-0">
+        <code className="font-mono text-xs text-accent-strong">
+          {claim.name}
+        </code>
+        <p className="mt-0.5 text-[10px] uppercase tracking-[0.12em] text-faint">
+          {CLAIM_LABELS[claim.name]}
+        </p>
+      </div>
+
+      <div className="min-w-0 space-y-1">
+        <p className="break-words font-mono text-xs leading-5 text-ink">
+          {claim.raw}
+        </p>
+        {claim.dateIso && (
+          <p className="break-words text-[11px] text-muted">
+            {claim.dateIso}
+          </p>
+        )}
+        {claim.relative && (
+          <p className="text-[11px] text-faint">{claim.relative}</p>
+        )}
+      </div>
+
+      <Badge variant={claimBadgeVariant(claim.status)}>
+        {CLAIM_STATUS_LABELS[claim.status]}
+      </Badge>
+    </li>
+  );
+}
+
+function DecodedHeader({ decoded }: { decoded: DecodedJwt }) {
+  const algorithm =
+    typeof decoded.header.alg === "string" ? decoded.header.alg : null;
+  const type = typeof decoded.header.typ === "string" ? decoded.header.typ : null;
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 border-b border-line px-4 py-3">
+      <h2 className="text-sm font-semibold text-ink">Header</h2>
+      {algorithm && <Badge variant="accent">{algorithm}</Badge>}
+      {type && <Badge variant="outline">{type}</Badge>}
+    </div>
+  );
+}
+
+function ClaimsSummary({ claims }: { claims: JwtClaimReport }) {
+  const withinLifetime =
+    claims.hasExpiry &&
+    !claims.expired &&
+    !claims.notYetValid &&
+    !claims.issuedInFuture &&
+    !claims.nonStandard;
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {claims.expired && <Badge variant="warning">Expired</Badge>}
+      {claims.notYetValid && (
+        <Badge variant="warning">Not yet valid</Badge>
+      )}
+      {claims.issuedInFuture && (
+        <Badge variant="warning">Issued in future</Badge>
+      )}
+      {!claims.hasExpiry && <Badge variant="outline">No exp</Badge>}
+      {claims.nonStandard && (
+        <Badge variant="warning">Non-standard</Badge>
+      )}
+      {withinLifetime && (
+        <Badge variant="success">Within lifetime</Badge>
+      )}
+    </div>
+  );
+}
+
+export function JwtInspectorScreen() {
+  const [token, setToken] = useState("");
+  const [decodedState, setDecodedState] = useState<DecodedState | null>(
+    null,
+  );
+  const [notice, setNotice] = useState<Notice | null>(null);
+  const [copyTarget, setCopyTarget] = useState<string | null>(null);
+
+  const tokenRef = useRef<HTMLTextAreaElement>(null);
+
+  const stale =
+    decodedState !== null && token.trim() !== decodedState.source;
+
+  function handleInput(value: string) {
+    setToken(value);
+    setNotice(null);
+  }
+
+  function handleDecode() {
+    const source = token.trim();
+
+    if (source.length === 0) {
+      setDecodedState(null);
+      setNotice({
+        kind: "warning",
+        message: "Paste a JWT to inspect.",
+      });
+      tokenRef.current?.focus();
+      return;
+    }
+
+    const result = decodeJwt(source);
+
+    if (!result.ok) {
+      setDecodedState(null);
+      setNotice({ kind: "error", message: result.error.message });
+      return;
+    }
+
+    setDecodedState({
+      source,
+      decoded: result.decoded,
+      claims: inspectClaims(result.decoded.payload),
+    });
+    setNotice({
+      kind: "success",
+      message: "Decoded locally. Signature is not verified.",
+    });
+  }
+
+  function handleClear() {
+    setToken("");
+    setDecodedState(null);
+    setNotice({
+      kind: "info",
+      message: "Cleared the token and decoded output.",
+    });
+    tokenRef.current?.focus();
+  }
+
+  async function handleCopy(text: string, label: string) {
+    if (copyTarget) return;
+
+    setCopyTarget(label);
+    const copied = await copyToClipboard(text);
+    setCopyTarget(null);
+
+    if (copied) {
+      setNotice({ kind: "success", message: `Copied ${label}.` });
+      return;
+    }
+
+    setNotice({
+      kind: "error",
+      message: `Could not copy ${label}. Select it and copy manually.`,
+    });
+  }
+
+  const headerJson = decodedState
+    ? prettyJson(decodedState.decoded.header)
+    : "";
+  const payloadJson = decodedState
+    ? prettyJson(decodedState.decoded.payload)
+    : "";
+
+  return (
+    <section className="mx-auto flex w-full max-w-[90rem] flex-col gap-6">
+      <PageHeader
+        eyebrow={module.milestone}
+        title={module.name}
+        description="Decode a JWT locally and inspect its header, payload, claims, and lifetime. DevLens never sends a token anywhere."
+        actions={<Badge variant="accent">Local only</Badge>}
+      />
+
+      <Card
+        role="note"
+        aria-label="Signature verification warning"
+        className="flex items-start gap-3 border-warning/25 bg-warning/[0.04] px-4 py-3"
+      >
+        <LockIcon className="mt-0.5 size-4 shrink-0 text-warning" />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-ink">
+            Signature unverified
+          </p>
+          <p className="mt-1 text-xs leading-5 text-muted">
+            Decoding does not prove a token is authentic. DevLens reads the
+            token locally but does not verify its signature, so treat the
+            header and payload as untrusted until the issuer verifies them.
+          </p>
+        </div>
+        <Badge variant="warning">Unverified</Badge>
+      </Card>
+
+      <Card className="flex min-w-0 flex-col overflow-hidden">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-3">
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-ink">Token</h2>
+            {token.length > 0 && (
+              <Badge variant="outline">
+                {token.length.toLocaleString()} chars
+              </Badge>
+            )}
+            {stale && <Badge variant="warning">Stale</Badge>}
+          </div>
+          <span className="text-[10px] uppercase tracking-[0.16em] text-faint">
+            Compact JWT
+          </span>
+        </div>
+
+        <div className="focus-within:ring-1 focus-within:ring-inset focus-within:ring-accent/30">
+          <label htmlFor="jwt-token" className="sr-only">
+            JWT token
+          </label>
+          <textarea
+            id="jwt-token"
+            ref={tokenRef}
+            value={token}
+            onChange={(event) => handleInput(event.target.value)}
+            onKeyDown={(event) => {
+              if (
+                event.key === "Enter" &&
+                (event.metaKey || event.ctrlKey)
+              ) {
+                event.preventDefault();
+                handleDecode();
+              }
+            }}
+            aria-describedby="jwt-token-help"
+            spellCheck={false}
+            autoCapitalize="off"
+            autoCorrect="off"
+            placeholder="Paste a compact JWT: header.payload.signature"
+            className="h-40 w-full resize-y bg-transparent px-4 py-3 font-mono text-[12.5px] leading-6 text-ink placeholder:text-faint focus:outline-none"
+          />
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 border-t border-line px-4 py-3">
+          <Button
+            size="sm"
+            variant="primary"
+            onClick={handleDecode}
+            disabled={token.trim().length === 0}
+          >
+            <ScanIcon className="size-3.5" />
+            Decode
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={handleClear}
+            disabled={token.length === 0 && decodedState === null}
+            className="text-danger hover:bg-danger/10 hover:text-danger"
+          >
+            <TrashIcon className="size-3.5" />
+            Clear
+          </Button>
+          <span
+            id="jwt-token-help"
+            className="ml-auto text-[10px] text-faint"
+          >
+            <Kbd>Ctrl</Kbd> / <Kbd>⌘</Kbd> + <Kbd>Enter</Kbd> to decode.
+            Tokens are never stored.
+          </span>
+        </div>
+      </Card>
+
+      {notice && <NoticeBanner notice={notice} />}
+
+      {decodedState ? (
+        <>
+          {stale && (
+            <div
+              role="status"
+              className="flex items-start gap-3 rounded-xl border border-warning/25 bg-warning/[0.06] px-4 py-3"
+            >
+              <AlertIcon className="mt-0.5 size-4 shrink-0 text-warning" />
+              <p className="text-sm text-ink">
+                The token changed after this decode. Decode again to
+                refresh the results.
+              </p>
+            </div>
+          )}
+
+          <div className="grid min-w-0 gap-4 xl:grid-cols-2">
+            <Card className="flex min-w-0 flex-col overflow-hidden">
+              <DecodedHeader decoded={decodedState.decoded} />
+              <div className="flex items-center justify-end border-b border-line px-4 py-2">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  aria-label="Copy decoded header"
+                  onClick={() =>
+                    void handleCopy(headerJson, "decoded header")
+                  }
+                  disabled={copyTarget !== null}
+                >
+                  <CopyIcon className="size-3.5" />
+                  {copyTarget === "decoded header"
+                    ? "Copying…"
+                    : "Copy header"}
+                </Button>
+              </div>
+              <div className="h-[clamp(14rem,28vh,24rem)] min-h-0">
+                <JsonCodeEditor label="Decoded JWT header" value={headerJson} readOnly />
+              </div>
+            </Card>
+
+            <Card className="flex min-w-0 flex-col overflow-hidden">
+              <div className="flex flex-wrap items-center gap-2 border-b border-line px-4 py-3">
+                <h2 className="text-sm font-semibold text-ink">
+                  Payload
+                </h2>
+                <Badge variant="outline">
+                  {Object.keys(decodedState.decoded.payload).length} keys
+                </Badge>
+              </div>
+              <div className="flex items-center justify-end border-b border-line px-4 py-2">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  aria-label="Copy decoded payload"
+                  onClick={() =>
+                    void handleCopy(payloadJson, "decoded payload")
+                  }
+                  disabled={copyTarget !== null}
+                >
+                  <CopyIcon className="size-3.5" />
+                  {copyTarget === "decoded payload"
+                    ? "Copying…"
+                    : "Copy payload"}
+                </Button>
+              </div>
+              <div className="h-[clamp(14rem,28vh,24rem)] min-h-0">
+                <JsonCodeEditor label="Decoded JWT payload" value={payloadJson} readOnly />
+              </div>
+            </Card>
+          </div>
+
+          <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]">
+            <Card className="flex min-w-0 flex-col overflow-hidden">
+              <div className="flex flex-wrap items-center gap-2 border-b border-line px-4 py-3">
+                <h2 className="text-sm font-semibold text-ink">
+                  Signature
+                </h2>
+                <Badge variant="warning">Unverified</Badge>
+                <Badge variant="outline">
+                  {decodedState.decoded.signatureBytes} bytes
+                </Badge>
+              </div>
+              <div className="min-w-0 flex-1 space-y-3 p-4">
+                <code className="block break-all font-mono text-xs leading-6 text-muted">
+                  {decodedState.decoded.signature ||
+                    "Empty signature segment"}
+                </code>
+                <p className="text-[11px] leading-5 text-faint">
+                  This is the signature segment as written in the token.
+                  DevLens does not verify it, and an empty segment is not
+                  proof that the token is unsigned or valid.
+                </p>
+              </div>
+              <div className="flex justify-end border-t border-line px-4 py-2">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  aria-label="Copy JWT signature"
+                  onClick={() =>
+                    void handleCopy(
+                      decodedState.decoded.signature,
+                      "signature",
+                    )
+                  }
+                  disabled={
+                    copyTarget !== null ||
+                    decodedState.decoded.signature.length === 0
+                  }
+                >
+                  <CopyIcon className="size-3.5" />
+                  {copyTarget === "signature"
+                    ? "Copying…"
+                    : "Copy signature"}
+                </Button>
+              </div>
+            </Card>
+
+            <Card className="min-w-0 overflow-hidden">
+              <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-4 py-3">
+                <div>
+                  <h2 className="text-sm font-semibold text-ink">
+                    Claims
+                  </h2>
+                  <p className="mt-0.5 text-xs text-faint">
+                    Registered claims from the payload, evaluated against
+                    your local clock.
+                  </p>
+                </div>
+                <ClaimsSummary claims={decodedState.claims} />
+              </div>
+              <ul className="divide-y divide-line">
+                {decodedState.claims.claims.map((claim) => (
+                  <ClaimRow key={claim.name} claim={claim} />
+                ))}
+              </ul>
+            </Card>
+          </div>
+        </>
+      ) : (
+        <Card>
+          <div className="grid place-items-center px-6 py-14">
+            <EmptyState
+              icon={<KeyIcon className="size-5" />}
+              title="No token decoded"
+              description="Paste a compact JWT above and decode it locally. Header, payload, signature, and registered claims appear here without any network request."
+            />
+          </div>
+        </Card>
+      )}
+    </section>
   );
 }

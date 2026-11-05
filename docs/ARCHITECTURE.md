@@ -70,6 +70,29 @@ and tree. `json-editor.tsx` wraps CodeMirror 6 with a dark theme and exposes
 `focus`/`reveal` for error jumps. `json-tree.tsx` renders typed, collapsible
 nodes and bounds each container to 100 visible children and 40 depth levels.
 
+### JWT Inspector
+
+`src/features/jwt` is the second functional module. `jwt-core.ts` is a pure
+decoder for compact JWTs: it splits exactly three segments, validates
+Base64URL, decodes bytes, enforces fatal UTF-8, parses the header and payload as
+JSON objects, and exposes the raw signature plus its byte length. It has no
+Chrome, DOM, storage, network, or `eval` dependency and never verifies or
+interprets a signing algorithm.
+
+`jwt-claims.ts` is a separate pure layer over the decoded payload. It explains
+`exp`, `iat`, `nbf`, `iss`, `sub`, `aud`, and `jti`; formats numeric dates
+against an injectable clock; and classifies expired, not-yet-valid,
+future-issued, missing, and non-standard values. Keeping clock evaluation
+separate makes claim tests deterministic.
+
+`JwtInspectorScreen.tsx` owns the token textarea, decode/clear actions, notices,
+stale-result state, claim table, and copy actions. It reuses the read-only
+`JsonCodeEditor` for highlighted header and payload JSON, and always displays a
+signature-unverified warning. Tokens and decoded results live only in component
+state; there is no persistence, history, telemetry, or network request. The
+signature segment is shown verbatim and empty signatures are not treated as
+proof of validity.
+
 ### DevTools
 
 `devtools.html` runs `src/devtools/index.ts`, which calls
@@ -166,9 +189,10 @@ remote assets, so there are no external fonts, images, or icon libraries.
 
 Vitest runs two projects:
 
-- `node` for pure logic (`src/shared`, `src/background`, `json-core`, manifest
-  contract)
-- `dom` with jsdom for components, storage, and the JSON tree/editor screen
+- `node` for pure logic (`src/shared`, `src/background`, `json-core`,
+  `jwt-core`, `jwt-claims`, manifest contract)
+- `dom` with jsdom for components, storage, and the JSON tree/editor and JWT
+  screens
 
 `src/test/setup.ts` installs jest-dom matchers and RTL cleanup. Tests mock
 `chrome` with `vi.stubGlobal`. CodeMirror renders under jsdom; editor
