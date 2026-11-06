@@ -89,14 +89,13 @@ Shipped:
   enabled/disabled headers, and a body with a content-type selection.
 - Method selector (GET, POST, PUT, PATCH, DELETE), absolute http/https URL
   validation, add/remove/reset controls, and explicit empty states.
-- Clear messaging that sending, host permissions, responses, collections, and
-  history are not part of this stage.
+- Stage 3A messaging that execution, host permissions, response rendering,
+  collections, and history were not part of that stage.
 - Pure request-model helpers and focused model/screen tests.
 - No network requests, persistence, telemetry, or new permissions.
 
-Known limitations: the Send control is intentionally disabled; auth and body
-options beyond content type are not implemented; nothing is saved between
-sessions.
+Known limitations at this stage: auth and body options beyond content type are
+not implemented; nothing is saved between sessions.
 
 ### Stage 3B — Request execution
 
@@ -115,11 +114,10 @@ Shipped:
   and request id, with structured `runtime-unavailable`, `runtime-error`, and
   `invalid-response` failures.
 - Contract, router, and sender tests asserting no network request is made.
-- No `fetch`, no host permissions, no persistence, and the Send control remains
-  disabled.
+- No `fetch`, host permission, persistence, or Send wiring at this stage.
 
-Known limitations: this stage only defined the contract and routing. Stage
-3B-2 replaces the `not-implemented` path with real background execution.
+Known limitations: this stage only defined the contract and routing. Stage 3B-2
+replaced the `not-implemented` path with real background execution.
 
 #### Stage 3B-2 — Background HTTP execution (implemented)
 
@@ -142,19 +140,42 @@ Shipped:
   response bodies are returned as text.
 - Optional host permissions for `http://*/*` and `https://*/*`; the background
   checks `chrome.permissions.contains` before fetching and never prompts.
-  `requestOriginPermission` exists for the future user-initiated Send control.
+  `requestOriginPermission` exists for the user-initiated Send control added in
+  Stage 3B-3.
 - No persistence, logging, request replay, or backend service.
 
-Known limitations: the Send control and response UI are not implemented, so
-permission prompting is deferred; cancellation only works while the service
-worker remains alive; response bodies are buffered as text with no size cap;
-redirect policy, streaming, retries, collections, environments, and history
+Known limitations: cancellation only works while the service worker remains
+alive; custom redirect handling, retries, collections, environments, and history
+remain future work. Stage 3B-3 completes Send and response inspection, including
+the 2 MB streamed cap.
+
+#### Stage 3B-3 — Send and response inspector (implemented)
+
+Shipped:
+
+- Send wired from the request editor, with duplicate sends blocked while loading
+  and cancellation through the background worker.
+- Origin permission checked with `hasOriginPermission` first; when missing, the
+  click requests it from the user gesture before execution. Denied prompts are
+  surfaced without sending. Origin patterns omit ports.
+- Response inspector showing status, status text, duration, content type, final
+  URL, response headers, and body. HTTP 4xx/5xx remain successful transports.
+- JSON response formatting through the pure `json-core` formatter, with raw-text
+  fallback for malformed JSON, plain text handling, and an explicit empty state.
+- Streamed response-body cap of 2 MB with a structured `response-too-large`
+  failure before the full body is buffered.
+- No persistence, history, logging, telemetry, or response markup injection.
+
+Acceptance: permission grant, denial, loading, cancellation, timeout, HTTP
+errors, malformed JSON, and oversized responses are covered by automated tests;
+`npm run build` passes. Manual Chrome/Edge/Brave smoke testing remains pending.
+
+Known limitations: cancellation only works while the service worker remains
+alive; custom redirect handling, retries, collections, environments, and history
 remain future work.
 
 Remaining API Builder work:
 
-- Wire Send and response rendering, requesting origin permission from the
-  user-initiated control before execution.
 - Save collections and environments in `chrome.storage.local`.
 - Copy as cURL/fetch; replay history.
 

@@ -38,6 +38,7 @@ export type ApiExecutionErrorCode =
   | "network-error"
   | "timeout"
   | "aborted"
+  | "response-too-large"
   | "unsupported";
 
 export interface ApiExecutionError {
@@ -119,6 +120,7 @@ const API_EXECUTION_ERROR_CODES: readonly ApiExecutionErrorCode[] = [
   "network-error",
   "timeout",
   "aborted",
+  "response-too-large",
   "unsupported",
 ];
 

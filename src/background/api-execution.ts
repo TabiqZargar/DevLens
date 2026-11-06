@@ -26,6 +26,12 @@ interface ActiveRequest {
 
 const activeRequests = new Map<string, ActiveRequest>();
 
+const MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
+
+type BodyReadResult =
+  | { ok: true; body: string }
+  | { ok: false };
+
 const defaultDependencies: ApiExecutionDependencies = {
   fetch: (input, init) => fetch(input, init),
   hasOriginPermission,
@@ -97,6 +103,71 @@ function readHeaders(headers: Headers): ApiResponseHeader[] {
     result.push({ name, value });
   });
   return result;
+}
+
+function exceedsLimit(byteLength: number): boolean {
+  return byteLength > MAX_RESPONSE_BYTES;
+}
+
+async function readResponseBody(
+  response: Response,
+): Promise<BodyReadResult> {
+  const contentLength = response.headers.get("content-length");
+  const stream = response.body;
+
+  if (contentLength !== null) {
+    const declared = Number(contentLength);
+    if (Number.isFinite(declared) && exceedsLimit(declared)) {
+      if (stream) {
+        try {
+          await stream.cancel();
+        } catch {
+          // The body is discarded either way.
+        }
+      }
+      return { ok: false };
+    }
+  }
+
+  if (!stream || typeof stream.getReader !== "function") {
+    const text = await response.text();
+    const byteLength = new TextEncoder().encode(text).byteLength;
+    return exceedsLimit(byteLength)
+      ? { ok: false }
+      : { ok: true, body: text };
+  }
+
+  const reader = stream.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value) continue;
+
+      total += value.byteLength;
+      if (exceedsLimit(total)) {
+        await reader.cancel();
+        return { ok: false };
+      }
+
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  const combined = new Uint8Array(total);
+  let offset = 0;
+
+  for (const chunk of chunks) {
+    combined.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  return { ok: true, body: new TextDecoder().decode(combined) };
 }
 
 function isAbortError(error: unknown): boolean {
@@ -175,7 +246,16 @@ export async function executeApiRequest(
       ...buildInit(request),
       signal: controller.signal,
     });
-    const body = await response.text();
+    const bodyResult = await readResponseBody(response);
+
+    if (!bodyResult.ok) {
+      return failure(
+        request.requestId,
+        "response-too-large",
+        "The response exceeded the 2 MB inspection limit.",
+      );
+    }
+
     const durationMs = Math.max(
       0,
       Math.round(deps.now() - startedAt),
@@ -192,7 +272,7 @@ export async function executeApiRequest(
         contentType: response.headers.get("content-type"),
         finalUrl: response.url || url,
         headers: readHeaders(response.headers),
-        body,
+        body: bodyResult.body,
       },
     };
   } catch (error) {

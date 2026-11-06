@@ -16,7 +16,10 @@ describe("origin permission helpers", () => {
       originPatternForUrl("https://api.example.com/items?x=1"),
     ).toBe("https://api.example.com/*");
     expect(originPatternForUrl("http://localhost:3000/path")).toBe(
-      "http://localhost:3000/*",
+      "http://localhost/*",
+    );
+    expect(originPatternForUrl("http://127.0.0.1:8080/api")).toBe(
+      "http://127.0.0.1/*",
     );
   });
 

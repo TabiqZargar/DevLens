@@ -95,17 +95,25 @@ proof of validity.
 
 ### API Builder
 
-`src/features/api` owns the Stage 3A request editor. `api-request.ts` is a pure,
-in-memory request model: methods, URL, key/value rows with enabled flags, and a
-body with a content type. It normalizes enabled rows, builds query strings, and
-validates absolute http/https URLs without network, storage, Chrome, or DOM
-access.
+`src/features/api` owns the request editor, execution client, and response
+inspector. `api-request.ts` is a pure, in-memory request model: methods, URL,
+key/value rows with enabled flags, and a body with a content type. It normalizes
+enabled rows, builds query strings, and validates absolute http/https URLs
+without network, storage, Chrome, or DOM access.
 
-`ApiBuilderScreen.tsx` composes the method/URL bar, Params, Headers, and Body
-sections, validation feedback, reset, and explicit empty states. Request drafts
-stay only in component state; nothing is persisted, transmitted, logged, or
-cached. The Send control is deliberately disabled until the execution stage
-lands.
+`ApiBuilderScreen.tsx` composes the method/URL bar, Params, Headers, Body, Send,
+and response inspector. Request drafts and responses stay in component state;
+nothing is persisted, logged, or cached. Send is enabled once the URL is valid.
+The click handler checks `hasOriginPermission` first and calls
+`requestOriginPermission` from that user gesture only when access is missing; a
+denied prompt becomes a structured `permission-denied` state. Loading disables
+duplicate sends, and Cancel uses `devlens:api-cancel` while the service worker
+is alive.
+
+`src/services/permissions.ts` derives Chrome origin patterns from the URL
+protocol and hostname. Ports are intentionally omitted because Chrome match
+patterns do not support them, so `http://localhost:3000` is requested as
+`http://localhost/*`.
 
 `api-execution.ts` defines the Stage 3B-1 execution contract. It builds a
 `devlens:api-execute` request from the normalized draft, validates every field
@@ -122,13 +130,20 @@ origin permission with `chrome.permissions.contains` (never prompting), appends
 enabled query parameters, applies headers, sets the body content type unless
 overridden, and calls `fetch` with an `AbortController`. Timeouts use the request
 `timeoutMs` (default 30 s, bounded 1–120 s); `devlens:api-cancel` aborts an
-in-flight request by id while the worker is alive. Success results include
-status, status text, response headers, body text, duration, content type, and
-final URL, and HTTP 4xx/5xx are returned as successful transports. Failures are
-fixed `permission-denied`, `network-error`, `timeout`, `aborted`, `unsupported`,
-or `invalid-request` results. The executor never persists or logs request or
-response data. The Send control and response UI remain out of scope, so
-permission prompting is deferred to that future user-initiated control.
+in-flight request by id while the worker is alive. The response body is read as
+a stream and rejected with `response-too-large` once it exceeds 2 MB, before the
+full body is buffered. Success results include status, status text, response
+headers, body text, duration, content type, and final URL, and HTTP 4xx/5xx are
+returned as successful transports. Failures are fixed `permission-denied`,
+`network-error`, `timeout`, `aborted`, `response-too-large`, `unsupported`, or
+`invalid-request` results. The executor never persists or logs request or
+response data.
+
+Stage 3B-3 wires Send and renders responses. The response card shows status and
+status text, duration, content type, final URL, response headers, and body. JSON
+media types are formatted through the pure `json-core` formatter; malformed JSON
+falls back to raw text, non-JSON bodies render as text, and empty bodies have an
+explicit state. Response text is rendered as text, never as trusted markup.
 
 ### DevTools
 
@@ -148,10 +163,10 @@ everything else to `{ ok: false, error: "Unsupported request." }`. Malformed
 execution and cancellation messages return fixed `invalid-request` results.
 `api-execution.ts` in the background builds the request, checks origin
 permission, runs `fetch` with a timeout and an abort signal, and reads the
-response body as text. The listener always answers asynchronously and converts
-unexpected failures to a fixed message so raw errors are not exposed. The
-worker contains no React or DOM code. It must remain usable where `window` and
-`localStorage` do not exist.
+response body as a stream with a 2 MB cap. The listener always answers
+asynchronously and converts unexpected failures to a fixed message so raw
+errors are not exposed. The worker contains no React or DOM code. It must
+remain usable where `window` and `localStorage` do not exist.
 
 ### Content script
 
@@ -208,8 +223,9 @@ background imports it as a pure module. `src/services/api-execution.ts` wraps
 structured `runtime-unavailable`, `runtime-error`, or `invalid-response`
 failures without echoing raw errors. `src/services/permissions.ts` wraps
 `chrome.permissions.contains` and `chrome.permissions.request` for origin
-patterns; only the background `contains` check runs automatically, while
-`request` is reserved for a future user-initiated Send control.
+patterns; the background uses `contains`, while the Send button calls `request`
+from its user gesture when access is missing. Origin patterns use protocol plus
+hostname and omit ports, which Chrome match patterns do not support.
 
 `src/services/storage.ts` wraps `chrome.storage.local` and falls back to
 `window.localStorage` when running under the Vite dev server. It guards both
@@ -219,16 +235,17 @@ live under the `devlens:settings` key.
 ## Permissions and cross-browser support
 
 Current permissions: `storage` only. `optional_host_permissions` declares
-`http://*/*` and `https://*/*` so a future user-initiated Send control can
-request a single origin without granting access up front.
+`http://*/*` and `https://*/*` so a user-initiated API Send can request a single
+origin without granting access up front.
 
 - `chrome.tabs.create` for opening the workspace does not require `tabs`.
 - DevTools panels require only the `devtools_page` manifest key.
 - The content script is built but not registered, so no host access is granted.
 - API Builder execution checks `chrome.permissions.contains` for the request
   origin and returns `permission-denied` rather than prompting from the service
-  worker. The Send control must call `requestOriginPermission` from a user
-  gesture before executing.
+  worker. The Send click checks first, then calls `requestOriginPermission` from
+  the user gesture when access is missing. Origin patterns use protocol plus
+  hostname and omit ports, which Chrome match patterns do not support.
 - Future Page Inspector work should use `activeTab` or a user-triggered injection
   path rather than broad always-on host access.
 
@@ -253,9 +270,10 @@ remote assets, so there are no external fonts, images, or icon libraries.
 Vitest runs two projects:
 
 - `node` for pure logic (`src/shared`, `src/background`, `json-core`,
-  `jwt-core`, `jwt-claims`, `api-request`, manifest contract)
-- `dom` with jsdom for components, storage, and the JSON tree/editor, JWT, and
-  API Builder screens
+  `jwt-core`, `jwt-claims`, `api-request`, `api-execution`, `api-response`,
+  manifest contract)
+- `dom` with jsdom for components, storage, the JSON tree/editor, JWT, and API
+  Builder screens including Send, permission, response, and cancellation states
 
 `src/test/setup.ts` installs jest-dom matchers and RTL cleanup. Tests mock
 `chrome` with `vi.stubGlobal`. CodeMirror renders under jsdom; editor
@@ -276,6 +294,8 @@ that do not exist until `npm run build`.
   extension.
 - **No JSON persistence.** Input, output, tree state, and errors live in memory
   only for the active screen; clearing and route changes discard them.
+- **Streamed response cap.** The background reads response streams and rejects
+  bodies over 2 MB before buffering, bounding memory use for untrusted responses.
 - **No Ollama SDK.** The future integration is a small `fetch` client against a
   configurable localhost endpoint.
 - **Static manifest, no manifest plugin.** It is small and verifier-checked.

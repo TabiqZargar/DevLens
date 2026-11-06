@@ -50,12 +50,24 @@ semantic versioning.
 - Structured `permission-denied`, `network-error`, `timeout`, `aborted`,
   `unsupported`, and `invalid-request` failures with fixed messages.
 - Optional host permissions for HTTP(S) origins, an origin-permission check
-  used by the background, and explicit permission helpers for the future Send
-  control.
+  used by the background, and explicit permission helpers for the user-initiated
+  Send control wired in Stage 3B-3.
 - Executor, router, permission, contract, and sender tests covering success,
   query/header/body handling, timeouts, cancellation, HTTP errors, empty and
   non-JSON bodies, missing permission, network failures, and sensitive-error
   redaction.
+- API Builder Send wired to the execution service, with duplicate sends blocked
+  while loading and cancellation through the background worker.
+- Origin permission checked before sending and requested from the Send click
+  when missing; denied prompts are shown without execution.
+- Response inspector showing status, status text, duration, content type, final
+  URL, response headers, and body, with HTTP 4xx/5xx preserved as responses.
+- JSON response formatting through the pure `json-core` formatter, with raw-text
+  fallback for malformed JSON, plain text handling, and an explicit empty state.
+- Streamed response-body limit of 2 MB and a structured `response-too-large`
+  failure before the full body is buffered.
+- API Builder send, permission, response, formatting, cancellation, and
+  oversized-response tests.
 
 ### Changed
 
@@ -63,9 +75,12 @@ semantic versioning.
   returning `not-implemented`.
 - Background message handling now validates all incoming messages and always
   responds; unexpected failures return a fixed message instead of raw errors.
+- API Builder Send is now enabled; origin patterns use protocol plus hostname
+  and omit ports because Chrome match patterns do not support them.
+- Background responses are read as streams and capped at 2 MB.
 - Added minimal CodeMirror 6 dependencies and `worker.format: "es"` to Vite.
 - Updated module metadata and documentation for JSON Studio, JWT Inspector, and
-  the API Builder request editor.
+  API Builder through Stage 3B-3.
 
 ### Notes
 
@@ -74,15 +89,16 @@ semantic versioning.
 - JWT tokens, decoded output, and claim results stay in memory for the active
   screen. Tokens are never persisted or transmitted, and signatures are not
   verified.
-- API request drafts, headers, and bodies stay in memory for the active screen.
-  Stage 3A never sends requests, requests host permissions, or stores
-  collections. Stage 3B-1 added the typed execution contract and routing; Stage
-  3B-2 executes requests in the background only after checking optional origin
-  permission, never persists or logs request/response data, and still leaves
-  the Send control disabled until the response UI lands. Cancellation depends on
-  the service worker staying alive for the duration of the request.
+- API request drafts, headers, bodies, and responses stay in memory for the
+  active screen. Send checks optional origin permission first and requests it
+  from the user gesture only when missing. Stage 3B-2 executes requests in the
+  background and never persists or logs request/response data; Stage 3B-3 wires
+  Send and response inspection, rejects response bodies over 2 MB, and formats
+  JSON with a raw-text fallback. Cancellation depends on the service worker
+  staying alive for the duration of the request.
 - The JSON tree renders at most 100 children per container and 40 depth levels.
-- Automated tests, typecheck, build, and verification pass. The manual
+- Automated tests cover the implemented features; `npm run build` runs
+  typecheck, both builds, and artifact verification. The manual
   Chrome/Edge/Brave smoke test is still pending.
 
 ## [0.1.0] - 2026-11-04

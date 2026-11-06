@@ -299,6 +299,55 @@ describe("background API execution", () => {
     expect(html.ok && html.data.body).toBe("<html>hello</html>");
   });
 
+  it("rejects oversized responses before buffering the full body", async () => {
+    const chunk = new Uint8Array(1024 * 1024);
+    let pulls = 0;
+    const text = vi.fn(async () => {
+      throw new Error("the body should not be buffered");
+    });
+
+    const stream = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        pulls += 1;
+
+        if (pulls > 4) {
+          controller.close();
+          return;
+        }
+
+        controller.enqueue(chunk);
+      },
+    });
+
+    const response = {
+      status: 200,
+      statusText: "OK",
+      url: "https://api.example.com/items",
+      headers: new Headers(),
+      body: stream,
+      text,
+    } as unknown as Response;
+
+    const result = await executeApiRequest(
+      makeRequest(),
+      makeDeps({
+        fetch: (async () => response) as unknown as typeof fetch,
+      }),
+    );
+
+    expect(result).toEqual({
+      type: API_EXECUTION_MESSAGE,
+      requestId: "req-1",
+      ok: false,
+      error: {
+        code: "response-too-large",
+        message: "The response exceeded the 2 MB inspection limit.",
+      },
+    });
+    expect(text).not.toHaveBeenCalled();
+    expect(pulls).toBeLessThan(5);
+  });
+
   it("refuses to execute without origin permission", async () => {
     const fetchMock = vi.fn(
       async (_url: string, _init?: RequestInit) => fakeResponse(),
