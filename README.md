@@ -138,6 +138,8 @@ Implemented:
 - Background API execution with optional origin-permission checks, bounded
   timeout, cancellation, a 2 MB response cap, and structured errors
 - DevTools panel registration and inspected-tab context
+- Network Inspector with live and snapshot capture, filtering, request details,
+  lazy response previews, Copy as cURL, and HAR export
 - Typed background messaging and page-metadata contract
 - Storage wrapper with a dev fallback outside extensions
 - Premium dark design system, responsive layout, and inline icon set
@@ -145,9 +147,9 @@ Implemented:
 
 Not implemented yet:
 
-- Network capture
 - JWT signature verification
-- Collections, environments, request history, and copy-as-cURL/fetch
+- API Builder collections, environments, request history, and
+  copy-as-cURL/fetch
 - Ollama integration
 - Page Inspector and content-script registration
 - Firefox support (Chromium-only manifest and `chrome.*` APIs)

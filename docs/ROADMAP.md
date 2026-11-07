@@ -34,6 +34,54 @@ Acceptance: live requests appear without reloading the panel; clearing removes
 all rows; no request bodies are persisted to storage by default; panel remains
 responsive with at least 1,000 captured requests.
 
+### Stage 1A — Live capture and list (implemented)
+
+Shipped:
+
+- Live `onRequestFinished` capture plus a `getHAR()` snapshot, normalized into
+  method, URL, status, resource type, size, duration, headers, query parameters,
+  and post data.
+- Bounded in-memory session with pause/resume, clear, and summary counts.
+- Filtering by resource type, status class, domain, and text.
+- Request detail tabs for Overview, Request, Response, and Timing, with empty and
+  failure states.
+- Network model, capture, formatting, and panel tests, with no persistence,
+  telemetry, or new permissions.
+
+### Stage 1B — Response preview and initiator (implemented)
+
+Shipped:
+
+- On-demand response bodies through the retained `getContent()` handle; no
+  automatic body fetching.
+- JSON formatting through the pure `json-core` formatter, raw-text fallback,
+  Base64 text decoding, and a 1 MiB preview cap.
+- Explicit empty, binary, unavailable, malformed, and unsupported-encoding
+  states; previews are rendered as text and never persisted.
+- Deduplicated and stale-safe loading, plus retry after a failed load.
+- Normalized initiator type, source, location, and bounded call stack in the
+  request Overview.
+- Pure content, model, capture, and panel tests for lazy loading, duplicates,
+  stale results, binary content, failures, initiators, and payload formatting.
+
+### Stage 1C — cURL and HAR export (implemented)
+
+Shipped:
+
+- Copy a selected request as a single-line POSIX cURL command, including method,
+  URL and query parameters, captured headers, request payloads, and a
+  post-data `Content-Type` fallback when the header is absent.
+- HAR 1.2 export for the captured session through a pure serializer, with
+  explicit fallbacks for missing status, timing, size, and start-time data.
+- HAR response content includes only bodies the user explicitly loaded during
+  the session; text is capped at 1 MiB and truncation is noted in the export.
+- Clipboard and local download actions with success/failure feedback, a
+  sensitive-data warning for copied commands, and no new permissions.
+- Pure cURL/content/HAR tests plus panel tests for copy, loaded-body export,
+  disabled empty exports, and object-URL cleanup.
+
+Remaining for Milestone 1: the Chrome/Edge/Brave manual smoke test.
+
 ## Milestone 2 — JSON Studio and JWT Inspector (implemented)
 
 ### JSON Studio

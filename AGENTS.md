@@ -7,10 +7,13 @@
 - Use npm (Node >= 22.12; developed on Node 24.21 / npm 11.19). `package-lock.json` is authoritative; do not switch package managers.
 - JSON Studio, JWT Inspector, and API Builder through Stage 3B-3 are implemented
   and tested; Send, permission prompting, response inspection, and the 2 MB
-  response cap are wired. Network capture, collections, Ollama, and Page
+  response cap are wired. Network Inspector Stage 1A/1B/1C is implemented and
+  tested: live capture, a bounded in-memory session, pause/clear, filtering,
+  request details, normalized initiator data, on-demand response-body
+  previews, Copy as cURL, and HAR export. Collections, Ollama, and Page
   Inspector remain scaffolds unless their milestone is explicitly requested.
-  Manual Chrome/Edge/Brave smoke testing for API Builder is still pending. Treat
-  JSON Studio as the reference feature.
+  Manual Chrome/Edge/Brave smoke testing for API Builder and Network Inspector
+  is still pending. Treat JSON Studio as the reference feature.
 
 ## Commands
 
@@ -30,6 +33,7 @@
 - `public/manifest.json` is copied verbatim. Renaming a build output requires changes in `scripts/build-scripts.mjs` and `scripts/verify-build.mjs`; update the manifest too when it references that file (`background.js` today, `content.js` once registered). The JSON worker is a Vite-hashed, non-manifest asset; do not hardcode its filename.
 - JSON processing is pure in `src/features/json/json-core.ts`, shared by `json-worker.ts` and the synchronous fallback. Keep Chrome APIs, DOM, storage, network, and `eval` out of the core and worker. JSON Studio must never persist payloads or add history without an explicit requirement.
 - API Builder keeps the pure execution contract in `src/features/api/api-execution.ts`, the background executor in `src/background/api-execution.ts`, and the UI client in `src/services/api-execution.ts`. Send checks `hasOriginPermission` first, then requests only from the click when missing. Origin patterns use protocol plus hostname and omit ports.
+- Network export is split into pure `network-curl.ts` and `network-har.ts`, with clipboard/download side effects in `network-io.ts`. HAR includes only response bodies the user explicitly loaded, capped at 1 MiB; generated commands and HAR payloads stay in memory and are never persisted or logged. Do not add permissions or automatic export.
 - CodeMirror 6 owns the JSON editor. Keep the package set minimal (`@codemirror/{state,view,commands,language,lang-json}` plus `@lezer/highlight`); do not add editor wrappers or UI libraries.
 - The content script builds but is intentionally not registered in the manifest, to avoid host access. Register it only when Page Inspector needs it, and update docs/permissions.
 - `src/shared/modules.ts` owns module metadata and hash routing; `src/features/registry.ts` maps ids to screens. Add a module in both.
@@ -48,8 +52,8 @@
   `docs/ARCHITECTURE.md`, and tests.
 - Version lives in both `package.json` and `public/manifest.json`; `src/manifest.test.ts` fails if they drift.
 - Strict TS uses `noUncheckedIndexedAccess` and `verbatimModuleSyntax`; use `import type` for type-only imports.
-- No fake data or believable placeholder UI. Unshipped module screens stay explicitly labelled scaffolds until their milestone lands; JSON Studio, JWT Inspector, and API Builder through Stage 3B-3 are functional exceptions.
-- Tests run in two Vitest projects: `node` for pure logic (including `json-core`, API execution contracts, and response formatting), `dom` (jsdom) for components/storage and the JSON tree/screen plus API Builder send/response states. Mock `chrome` with `vi.stubGlobal`; cleanup is in `src/test/setup.ts`.
+- No fake data or believable placeholder UI. Unshipped module screens stay explicitly labelled scaffolds until their milestone lands; JSON Studio, JWT Inspector, API Builder through Stage 3B-3, and Network Inspector through Stage 1C are functional exceptions.
+- Tests run in two Vitest projects: `node` for pure logic (including `json-core`, API execution contracts, response formatting, cURL generation, and HAR serialization), `dom` (jsdom) for components/storage and the JSON tree/screen, API Builder send/response states, and network export actions. Mock `chrome` with `vi.stubGlobal`; cleanup is in `src/test/setup.ts`.
 
 ## Gotchas
 

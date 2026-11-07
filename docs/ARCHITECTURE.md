@@ -153,6 +153,34 @@ explicit state. Response text is rendered as text, never as trusted markup.
 future network capture can target the inspected tab. No permission is required
 for these APIs beyond `devtools_page` in the manifest.
 
+The panel owns a `NetworkCapture` instance in `src/features/network`. It seeds
+the session from `chrome.devtools.network.getHAR()`, subscribes to
+`onRequestFinished`, normalizes each entry, and appends new requests to a bounded
+in-memory session. Pause/resume and clear act on that session; filtering and
+status classification are pure. Normalized entries carry method, URL, status,
+resource type, sizes, duration, headers, query parameters, post data, initiator
+data, and a `hasResponseContent` flag. The raw HAR entry is not retained.
+
+Response bodies are loaded lazily through the request handle's `getContent()`,
+only after the user clicks Load. Capture retains a narrow loader capability per
+entry and deduplicates in-flight loads. `network-content.ts` decodes and
+classifies the result: JSON is formatted with the pure `json-core` formatter,
+text previews are capped at 1 MiB, and binary, empty, unavailable, malformed, and
+unsupported-encoding content each have an explicit state. Previews are rendered
+as text and are never persisted. Snapshot entries from `getHAR()` do not expose
+`getContent()`, so their bodies are unavailable. Chrome may still materialize the
+full body internally when `getContent()` runs; DevLens only displays and retains
+the capped preview. Initiator data is normalized with a bounded call stack and
+rendered in the detail Overview.
+
+Network export is user-initiated. `network-curl.ts` turns one normalized entry
+into a single-line POSIX cURL command, and `network-har.ts` serializes the
+in-memory session as HAR 1.2. HAR response text is included only for bodies the
+user explicitly loaded, capped at 1 MiB, with a truncation comment when needed.
+`network-io.ts` owns the clipboard and Blob/anchor download side effects. The
+generated command and HAR payload exist only for the action and are never
+persisted or logged; no permission is added for export.
+
 ### Background
 
 `src/background/index.ts` registers a runtime message listener and delegates to

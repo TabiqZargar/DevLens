@@ -68,6 +68,32 @@ semantic versioning.
   failure before the full body is buffered.
 - API Builder send, permission, response, formatting, cancellation, and
   oversized-response tests.
+- Network Inspector live capture and a `getHAR()` snapshot normalized into
+  method, URL, status, resource type, size, duration, headers, query parameters,
+  and post data.
+- Bounded in-memory network session with pause/resume, clear, summary counts,
+  and filtering by resource type, status class, domain, and text.
+- Request detail tabs for Overview, Request, Response, and Timing, with
+  explicit empty states.
+- On-demand response-body previews through the retained `getContent()` handle,
+  with JSON formatting, raw-text fallback, Base64 text decoding, and a 1 MiB
+  preview cap.
+- Explicit empty, binary, unavailable, malformed, and unsupported-encoding
+  response states, plus deduplicated and stale-safe loading with retry.
+- Normalized initiator type, source, location, and bounded call stack in the
+  request Overview.
+- Copy as cURL for the selected request, with URL/query data, captured headers,
+  request payloads, content-type fallback, POSIX shell quoting, and a
+  sensitive-data warning.
+- HAR 1.2 export for the captured session, including request/response metadata,
+  query strings, headers, post data, and only explicitly loaded response
+  bodies with the 1 MiB cap and a truncation comment.
+- Clipboard and local HAR download feedback, with empty-session export disabled
+  and no new permissions or persistence.
+- Network content, model, capture, formatting, cURL, HAR, and panel tests
+  covering lazy loading, duplicate and stale results, binary content, failures,
+  initiators, filtering, payload formatting, copy, loaded-body export, export
+  failure, and object-URL cleanup.
 
 ### Changed
 
@@ -96,6 +122,16 @@ semantic versioning.
   Send and response inspection, rejects response bodies over 2 MB, and formats
   JSON with a raw-text fallback. Cancellation depends on the service worker
   staying alive for the duration of the request.
+- Network sessions stay in memory and are bounded; requests and response bodies
+  are never persisted or logged. Response bodies are fetched only when the user
+  clicks Load, previews are capped at 1 MiB, and binary or unavailable content is
+  shown explicitly. Chrome may still materialize the full body internally when
+  `getContent()` runs. Snapshot entries from `getHAR()` do not expose body
+  accessors.
+- Copy as cURL and HAR export are explicit user actions. Copied commands may
+  contain credentials or sensitive headers, and exported HAR files include
+  loaded response bodies; both stay in memory and are never persisted or
+  logged by DevLens.
 - The JSON tree renders at most 100 children per container and 40 depth levels.
 - Automated tests cover the implemented features; `npm run build` runs
   typecheck, both builds, and artifact verification. The manual
