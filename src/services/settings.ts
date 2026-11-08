@@ -10,7 +10,17 @@ export async function loadSettings(): Promise<DevLensSettings> {
     STORAGE_KEYS.settings,
     {},
   );
-  return { ...DEFAULT_SETTINGS, ...stored };
+
+  return {
+    ollamaEndpoint:
+      typeof stored.ollamaEndpoint === "string"
+        ? stored.ollamaEndpoint
+        : DEFAULT_SETTINGS.ollamaEndpoint,
+    ollamaModel:
+      typeof stored.ollamaModel === "string"
+        ? stored.ollamaModel
+        : DEFAULT_SETTINGS.ollamaModel,
+  };
 }
 
 export async function saveSettings(

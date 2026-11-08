@@ -167,6 +167,23 @@ export function SwapIcon(props: IconProps) {
   );
 }
 
+export function PlusIcon(props: IconProps) {
+  return (
+    <IconFrame {...props}>
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
+    </IconFrame>
+  );
+}
+
+export function StopIcon(props: IconProps) {
+  return (
+    <IconFrame {...props}>
+      <rect x="6" y="6" width="12" height="12" rx="2" />
+    </IconFrame>
+  );
+}
+
 export function CheckIcon(props: IconProps) {
   return (
     <IconFrame {...props}>

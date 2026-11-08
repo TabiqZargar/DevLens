@@ -1,9 +1,14 @@
+export { copyTextToClipboard } from "./clipboard";
 export { loadSettings, saveSettings } from "./settings";
 export { sendRuntimeMessage } from "./messaging";
 export {
   sendApiCancelMessage,
   sendApiExecutionMessage,
 } from "./api-execution";
+export {
+  createOllamaProvider,
+  ollamaProvider,
+} from "./local-ai";
 export {
   hasOriginPermission,
   originPatternForUrl,

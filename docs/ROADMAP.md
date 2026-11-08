@@ -238,6 +238,51 @@ Remaining API Builder work:
 Acceptance: no request leaves localhost; the UI degrades cleanly when Ollama is
 not running; payloads are sent only after a user action.
 
+### Stage 2A — Ollama connection and model discovery (implemented)
+
+Shipped:
+
+- Loopback-only endpoint validation for `localhost`, `127.0.0.1`, and `[::1]`,
+  with credentials, paths, queries, and fragments rejected before any
+  permission prompt or request.
+- User-gesture optional-origin permission request, loopback `GET /api/tags`
+  discovery, a 5 s timeout, no credentials, rejected redirects, and a streamed
+  1 MiB metadata cap.
+- Connection screen with not-checked, checking, connected, permission,
+  unavailable, malformed, oversized, empty-model, and missing-saved-model
+  states.
+- Persisted endpoint and selected model, with malformed stored values repaired
+  to defaults and no model assumed before the user selects one.
+- Pure endpoint/model, provider, settings, and screen tests. No prompts,
+  payloads, responses, connection status, or conversation history are stored.
+- `OLLAMA_ORIGINS` guidance and no manifest or broad host-permission change.
+
+Stage 2A is implementation-complete.
+
+### Stage 2B — Streamed chat and safe rendering (implemented)
+
+Shipped:
+
+- In-memory chat UI with the selected installed model, a multiline composer,
+  `Enter` to send, `Shift` + `Enter` for a newline, Send, Stop, New chat, and
+  Copy response.
+- User-gesture optional-origin permission from Send, with explicit disabled,
+  empty, streaming, cancelled, and error states.
+- Loopback `POST /api/chat` with `stream: true`, incremental NDJSON parsing,
+  no credentials, rejected redirects, a 120 s inactivity timeout, a 2 MiB
+  response cap, and `AbortController` cancellation.
+- Partial-output preservation and fixed errors for malformed, empty, incomplete,
+  oversized, timed-out, unavailable, and permission-denied responses.
+- Safe Markdown rendering as React nodes, including headings, lists, quotes,
+  emphasis, inline code, fenced code blocks, and code-copy actions, with no
+  injected HTML or Markdown dependency.
+- Chat tests covering parser boundaries, streaming, cancellation, permissions,
+  composer behavior, error states, and safe rendering. Conversations, prompts,
+  and responses stay in memory only.
+
+Remaining for this milestone: payload context, saved history, and manual
+Chrome/Edge/Brave smoke testing.
+
 ## Milestone 5 — Page Inspector
 
 - Register the content script only when the feature is used.

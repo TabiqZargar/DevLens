@@ -5,13 +5,16 @@ extension in Brave, Chrome, and Edge. It is designed for inspecting, shaping,
 and testing web APIs without sending developer data to a backend.
 
 This repository ships the extension foundation plus **JSON Studio**,
-**JWT Inspector**, and the **API Builder** request editor with send and response
-inspection. JSON is formatted, minified, validated, and explored entirely
+**JWT Inspector**, the **API Builder** request editor with send and response
+inspection, **Network Inspector**, and the **Local AI Assistant** with streamed
+Ollama chat. JSON is formatted, minified, validated, and explored entirely
 on-device, JWTs are decoded and inspected without verification or network
 access, and API requests are sent only when you press Send and grant Chrome
-access to that origin. None of these features upload or persist developer data.
-Network capture, collections, history, Ollama, and Page Inspector remain
-scaffolded.
+access to that origin. Network Inspector captures requests in an in-memory
+DevTools session, and Local AI chats only with a validated loopback Ollama
+endpoint without persisting prompts, responses, or conversation history.
+Collections, Local AI payload context, and Page Inspector remain scaffolded or
+future work.
 
 ## Stack
 
@@ -22,7 +25,7 @@ scaffolded.
 | Build      | Vite 8 (Rolldown), Manifest V3                 |
 | Tests      | Vitest 5, Testing Library, jsdom               |
 | Platform   | Chromium extensions (`chrome.*` APIs)          |
-| Local AI   | Ollama over HTTP (planned, no SDK)             |
+| Local AI   | Ollama over HTTP (`/api/tags`, `/api/chat`)    |
 
 No backend, no cloud AI, no telemetry, and no analytics.
 
@@ -120,9 +123,9 @@ Implemented:
 
 - Manifest V3 output for Chromium browsers
 - Popup launcher with background-worker health check
-- Full workspace shell with six module routes; JSON Studio, JWT Inspector, and
-  the API request editor are functional and the remaining modules are explicit
-  scaffolds
+- Full workspace shell with six module routes; JSON Studio, JWT Inspector, API
+  Builder, Network Inspector, and Local AI Assistant are functional; Page
+  Inspector remains future work
 - JSON Studio with a CodeMirror 6 editor, format, minify, validate, indentation,
   copy, swap, and clear actions
 - Worker-backed JSON parsing with a synchronous fallback for environments
@@ -140,6 +143,12 @@ Implemented:
 - DevTools panel registration and inspected-tab context
 - Network Inspector with live and snapshot capture, filtering, request details,
   lazy response previews, Copy as cURL, and HAR export
+- Local AI Assistant with a loopback-only Ollama endpoint, optional-origin
+  permission check, `/api/tags` model discovery, persisted model selection, and
+  explicit connected/empty/unavailable states
+- Local AI chat with streamed `/api/chat` responses, multiline composer,
+  cancellation, New chat, Copy response, safe Markdown/code rendering, code-copy
+  actions, and in-memory conversation state
 - Typed background messaging and page-metadata contract
 - Storage wrapper with a dev fallback outside extensions
 - Premium dark design system, responsive layout, and inline icon set
@@ -150,7 +159,7 @@ Not implemented yet:
 - JWT signature verification
 - API Builder collections, environments, request history, and
   copy-as-cURL/fetch
-- Ollama integration
+- Local AI payload context, saved conversation history, and cross-session chats
 - Page Inspector and content-script registration
 - Firefox support (Chromium-only manifest and `chrome.*` APIs)
 
@@ -193,6 +202,41 @@ three segments entirely on-device.
 
 Automated tests, typecheck, and the production build pass. The manual
 Chrome/Edge/Brave smoke test is still pending.
+
+## Local AI Assistant
+
+Open the workspace, choose **Local AI Assistant**, and confirm the Ollama
+endpoint (default `http://127.0.0.1:11434`). **Check connection** asks Chrome
+for access to that loopback origin, then calls `GET /api/tags` and lists the
+models installed on the machine. Select a model, type a message, and send with
+**Send** or `Enter`; use `Shift` + `Enter` for a newline. **Stop** cancels a
+stream, **New chat** clears the in-memory transcript, and completed replies can
+be copied whole or by code block.
+
+- Only loopback HTTP(S) endpoints on `localhost`, `127.0.0.1`, or `[::1]` are
+  accepted. Remote URLs, credentials, paths, queries, and fragments are
+  rejected before any permission prompt or request.
+- The endpoint and selected model are stored in `chrome.storage.local`.
+  Connection status, discovered models, prompts, responses, and conversation
+  messages stay in memory. API keys, payload context, and chat history are
+  never persisted, and page, network, or API data is never attached
+  automatically.
+- Connection checks use `credentials: "omit"`, reject redirects, time out after
+  5 seconds, and cap metadata at 1 MiB. Chat posts to `/api/chat` with
+  `stream: true`, parses NDJSON incrementally, times out after 120 seconds of
+  inactivity, caps the response at 2 MiB, and supports cancellation. Errors and
+  stopped generations preserve any partial reply.
+- Markdown is rendered as React nodes rather than injected HTML. Headings,
+  lists, quotes, emphasis, inline code, and fenced code blocks are supported;
+  code blocks include a copy action.
+- If Chrome blocks the request, restart Ollama with
+  `OLLAMA_ORIGINS=chrome-extension://*` so the extension origin is allowed.
+  Loopback alone does not guarantee that the browser request is accepted.
+- Payload context, saved conversations, and cross-session history are not
+  implemented in this stage.
+
+Automated tests and the production build pass. The manual Chrome/Edge/Brave
+smoke test is still pending.
 
 ## Cross-browser notes
 

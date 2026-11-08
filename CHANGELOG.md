@@ -94,6 +94,30 @@ semantic versioning.
   covering lazy loading, duplicate and stale results, binary content, failures,
   initiators, filtering, payload formatting, copy, loaded-body export, export
   failure, and object-URL cleanup.
+- Local AI Assistant Stage 2A with a loopback-only Ollama endpoint, a
+  user-gesture optional-origin permission check, and `/api/tags` model
+  discovery.
+- `LocalAiProvider` contract plus a typed `fetch` client with a 5 s timeout,
+  no credentials, rejected redirects, and a streamed 1 MiB metadata cap.
+- Ollama endpoint validation that rejects remote hosts, credentials, paths,
+  queries, and fragments before any permission prompt or request.
+- Local AI connection screen with explicit not-checked, checking, connected,
+  permission, unavailable, malformed-response, oversized-response, empty-model,
+  and missing-saved-model states.
+- Persisted Ollama endpoint and selected model settings, with malformed stored
+  values repaired to defaults.
+- Pure endpoint/model, provider, settings, and Local AI screen tests covering
+  loopback validation, permissions, discovery, timeouts, malformed and
+  oversized responses, empty states, and persisted model restoration.
+- Local AI Assistant Stage 2B with an in-memory chat, a multiline composer,
+  Send, Stop, New chat, Copy response, and user-gesture permission handling.
+- Streamed loopback `POST /api/chat` with incremental NDJSON parsing, a 120 s
+  inactivity timeout, a 2 MiB response cap, cancellation, and preserved partial
+  output on errors.
+- Safe Markdown rendering as React nodes with fenced code blocks and code-copy
+  actions, without injected HTML or a Markdown dependency.
+- Chat NDJSON parser, provider streaming, Markdown, composer, cancellation,
+  permission, partial-output, and safe-rendering tests.
 
 ### Changed
 
@@ -104,9 +128,12 @@ semantic versioning.
 - API Builder Send is now enabled; origin patterns use protocol plus hostname
   and omit ports because Chrome match patterns do not support them.
 - Background responses are read as streams and capped at 2 MB.
+- Local AI metadata responses are read as streams and capped at 1 MiB.
+- Settings now include the selected Ollama model alongside the endpoint.
 - Added minimal CodeMirror 6 dependencies and `worker.format: "es"` to Vite.
-- Updated module metadata and documentation for JSON Studio, JWT Inspector, and
-  API Builder through Stage 3B-3.
+- Updated module metadata and documentation for JSON Studio, JWT Inspector, API
+  Builder through Stage 3B-3, Network Inspector through Stage 1C, and Local AI
+  Stage 2A/2B.
 
 ### Notes
 
@@ -128,6 +155,14 @@ semantic versioning.
   shown explicitly. Chrome may still materialize the full body internally when
   `getContent()` runs. Snapshot entries from `getHAR()` do not expose body
   accessors.
+- Local AI Stage 2A/2B stores only the normalized Ollama endpoint and selected
+  model. Prompts, responses, model metadata, connection status, and conversation
+  messages stay in memory and are discarded by New chat, route changes, or
+  reload. The screen fetches only `GET /api/tags` and `POST /api/chat` from a
+  validated loopback endpoint after the user checks the connection or sends a
+  message and grants optional origin access; Ollama may still require
+  `OLLAMA_ORIGINS` for the extension origin. Payload context and saved or
+  cross-session history are not implemented in this stage.
 - Copy as cURL and HAR export are explicit user actions. Copied commands may
   contain credentials or sensitive headers, and exported HAR files include
   loaded response bodies; both stay in memory and are never persisted or

@@ -145,6 +145,46 @@ media types are formatted through the pure `json-core` formatter; malformed JSON
 falls back to raw text, non-JSON bodies render as text, and empty bodies have an
 explicit state. Response text is rendered as text, never as trusted markup.
 
+### Local AI Assistant
+
+`src/features/ai` owns Stage 2A/2B. `ollama.ts` is a pure loopback contract: it
+validates an HTTP(S) base URL, accepts only `localhost`, `127.0.0.1`, or
+`[::1]` hosts, rejects credentials, paths, queries, and fragments, and parses
+`/api/tags` responses into installed-model metadata. The parser accepts an
+empty list, rejects malformed shapes, and deduplicates names. `chat.ts` is a
+stateful NDJSON parser that tolerates arbitrary chunk boundaries, CRLF, blank
+lines, and malformed lines carrying valid data, and reports Ollama error events
+without surfacing raw payloads. `markdown.ts` parses the supported Markdown
+subset, while `markdown-message.tsx` renders it as React nodes with code-copy
+actions and never injects HTML. `provider.ts` defines the `LocalAiProvider`
+seam for connection and chat so another local backend can be added without
+rewriting the UI.
+
+`src/services/local-ai.ts` implements that seam with a small `fetch` client and
+injectable dependencies. The workspace screen and `LocalAiChat` perform requests
+directly rather than routing them through the service worker, so streaming does
+not depend on service-worker lifetime. The endpoint is validated first, then
+`hasOriginPermission` is checked and `requestOriginPermission` is called from
+the Check or Send user gesture only when access is missing. The provider repeats
+the permission check before fetching, uses no credentials, and disables
+redirects. Connection reads `GET /api/tags` with a 5 s `AbortController` timeout
+and a 1 MiB metadata cap. Chat posts to `/api/chat` with `stream: true`, decodes
+UTF-8 incrementally, parses NDJSON through `chat.ts`, posts no credentials, uses
+a 120 s inactivity timeout, caps the response at 2 MiB, and supports
+`AbortController` cancellation. Failures use fixed error codes; raw errors and
+response bodies are not surfaced, and partial assistant output is preserved on
+errors or cancellation.
+
+The screen stores only the normalized endpoint and selected model in the
+existing settings record. Connection status, discovered models, model metadata,
+and the chat transcript are transient component state. A saved model that is
+absent from the current endpoint is shown as a warning rather than silently
+replaced; no model is assumed before the user selects one. Prompt, response, or
+conversation history is never persisted, and page, network, or API data is
+never attached to a chat automatically. The local-only boundary note documents
+that Ollama may need `OLLAMA_ORIGINS` set for the extension origin; the UI does
+not imply that loopback connectivity is automatic.
+
 ### DevTools
 
 `devtools.html` runs `src/devtools/index.ts`, which calls
@@ -258,13 +298,16 @@ hostname and omit ports, which Chrome match patterns do not support.
 `src/services/storage.ts` wraps `chrome.storage.local` and falls back to
 `window.localStorage` when running under the Vite dev server. It guards both
 APIs, so the same module can be imported by extension pages and tests. Settings
-live under the `devlens:settings` key.
+live under the `devlens:settings` key; Local AI stores only the Ollama endpoint
+and selected model name there. Connection status, discovered models, and chat
+messages are not persisted.
 
 ## Permissions and cross-browser support
 
 Current permissions: `storage` only. `optional_host_permissions` declares
-`http://*/*` and `https://*/*` so a user-initiated API Send can request a single
-origin without granting access up front.
+`http://*/*` and `https://*/*` so a user-initiated API Send or Local AI
+connection check or chat send can request a single origin without granting
+access up front.
 
 - `chrome.tabs.create` for opening the workspace does not require `tabs`.
 - DevTools panels require only the `devtools_page` manifest key.
@@ -274,6 +317,10 @@ origin without granting access up front.
   worker. The Send click checks first, then calls `requestOriginPermission` from
   the user gesture when access is missing. Origin patterns use protocol plus
   hostname and omit ports, which Chrome match patterns do not support.
+- Local AI validates that the endpoint is loopback before any permission or
+  network call, then uses the same user-gesture permission flow. The provider
+  re-checks access before fetching and rejects redirects, so a validated
+  endpoint cannot become a remote request.
 - Future Page Inspector work should use `activeTab` or a user-triggered injection
   path rather than broad always-on host access.
 
@@ -299,9 +346,12 @@ Vitest runs two projects:
 
 - `node` for pure logic (`src/shared`, `src/background`, `json-core`,
   `jwt-core`, `jwt-claims`, `api-request`, `api-execution`, `api-response`,
-  manifest contract)
-- `dom` with jsdom for components, storage, the JSON tree/editor, JWT, and API
-  Builder screens including Send, permission, response, and cancellation states
+  settings, Ollama endpoint/model parsing, chat NDJSON parsing, Markdown parsing,
+  and the provider, manifest contract)
+- `dom` with jsdom for components, storage, the JSON tree/editor, JWT, API
+  Builder screens including Send, permission, response, and cancellation
+  states, Local AI connection/model states, chat streaming, and Markdown/code
+  rendering
 
 `src/test/setup.ts` installs jest-dom matchers and RTL cleanup. Tests mock
 `chrome` with `vi.stubGlobal`. CodeMirror renders under jsdom; editor
@@ -324,8 +374,12 @@ that do not exist until `npm run build`.
   only for the active screen; clearing and route changes discard them.
 - **Streamed response cap.** The background reads response streams and rejects
   bodies over 2 MB before buffering, bounding memory use for untrusted responses.
-- **No Ollama SDK.** The future integration is a small `fetch` client against a
-  configurable localhost endpoint.
+- **No Ollama SDK.** Local AI uses a small typed `fetch` client against a
+  validated loopback endpoint, with the provider seam kept separate from the
+  screen and no background message hop.
+- **No Markdown dependency or HTML injection.** Chat Markdown is parsed into
+  React nodes by a small local parser, keeping the CSP-safe renderer and the
+  dependency surface minimal.
 - **Static manifest, no manifest plugin.** It is small and verifier-checked.
 - **Deferred content-script registration.** Keeps the install prompt honest.
 
