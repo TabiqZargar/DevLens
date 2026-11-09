@@ -127,6 +127,21 @@ semantic versioning.
 - Provider `system` role support, mode/context validation, and prompt-building
   tests without adding a cloud provider, persistence, retrieval, or automatic
   page/network/API attachment.
+- Page Inspector with an explicit Inspect page action and read-only Overview,
+  Structure, Links, Images, Forms, and Accessibility sections.
+- Pure typed inspection contract and DOM collector with bounded headings,
+  heading jumps, links, images, forms, controls, findings, text, and URLs.
+- On-demand `content.js` injection through `activeTab` and `scripting`, with the
+  active tab captured when the popup opens the workspace and passed before the
+  hash route.
+- Overview metadata, heading hierarchy with missing-H1 and level-jump flags,
+  link text/destination/target inspection, image alt and dimension inspection,
+  form control labels and attributes, and lightweight accessibility heuristics.
+- Form inspection from labels and attributes only; entered values, passwords,
+  cookies, storage, and authentication data are never read.
+- Page inspection collector, content-script handler, injection service, and
+  screen tests, including explicit-action, restricted-page, missing-target,
+  loading, error, and clear-state coverage.
 
 ### Changed
 
@@ -140,9 +155,12 @@ semantic versioning.
 - Local AI metadata responses are read as streams and capped at 1 MiB.
 - Settings now include the selected Ollama model alongside the endpoint.
 - Added minimal CodeMirror 6 dependencies and `worker.format: "es"` to Vite.
+- The manifest now requests `storage`, `activeTab`, and `scripting`; there is no
+  `content_scripts` registration or persistent host access. Page Inspector
+  injects the built `content.js` only after the user presses Inspect.
 - Updated module metadata and documentation for JSON Studio, JWT Inspector, API
-  Builder through Stage 3B-3, Network Inspector through Stage 1C, and Local AI
-  Stage 2A/2B/2C.
+  Builder through Stage 3B-3, Network Inspector through Stage 1C, Local AI
+  Stage 2A/2B/2C, and Page Inspector.
 
 ### Notes
 
@@ -178,6 +196,13 @@ semantic versioning.
   contain credentials or sensitive headers, and exported HAR files include
   loaded response bodies; both stay in memory and are never persisted or
   logged by DevLens.
+- Page Inspector only inspects the active tab after the user presses Inspect.
+  The on-demand content script reads page metadata, headings, links, images,
+  forms, and accessibility signals, but never entered form values, passwords,
+  cookies, storage, or authentication data. Snapshots stay in memory, are
+  bounded, and are never persisted, transmitted, or attached to Local AI
+  automatically. Accessibility findings are heuristics, not a WCAG compliance
+  claim.
 - The JSON tree renders at most 100 children per container and 40 depth levels.
 - Automated tests cover the implemented features; `npm run build` runs
   typecheck, both builds, and artifact verification. The manual

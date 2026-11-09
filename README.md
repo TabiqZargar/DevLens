@@ -6,16 +6,16 @@ and testing web APIs without sending developer data to a backend.
 
 This repository ships the extension foundation plus **JSON Studio**,
 **JWT Inspector**, the **API Builder** request editor with send and response
-inspection, **Network Inspector**, and the **Local AI Assistant** with streamed
-Ollama chat and explicit code assistance. JSON is formatted, minified,
-validated, and explored entirely on-device, JWTs are decoded and inspected
-without verification or network access, and API requests are sent only when you
-press Send and grant Chrome access to that origin. Network Inspector captures
-requests in an in-memory DevTools session, and Local AI chats only with a
-validated loopback Ollama endpoint without persisting prompts, responses, code,
-or conversation history. Collections and Page Inspector remain scaffolded or
-future work; automatic payload context and saved Local AI history are not
-implemented.
+inspection, **Network Inspector**, the **Local AI Assistant** with streamed
+Ollama chat and explicit code assistance, and the **Page Inspector** for
+read-only active-tab snapshots. JSON is formatted, minified, validated, and
+explored entirely on-device, JWTs are decoded and inspected without verification
+or network access, and API requests are sent only when you press Send and grant
+Chrome access to that origin. Network Inspector captures requests in an
+in-memory DevTools session, Local AI chats only with a validated loopback Ollama
+endpoint, and Page Inspector inspects the page only after you press Inspect.
+Collections remain scaffolded or future work; automatic payload context and
+saved Local AI history are not implemented.
 
 ## Stack
 
@@ -105,7 +105,7 @@ devtools.html           Registers the DevTools panel
 panel.html              DevTools network panel UI
 public/manifest.json    Manifest V3 source, copied verbatim
 src/background/         MV3 service worker and message handler
-src/content/            Classic content script IIFE (built, not registered yet)
+src/content/            Classic content script IIFE (injected on demand)
 src/devtools/           DevTools page bootstrap and panel UI
 src/popup/              Popup launcher
 src/workspace/          Hash-routed workspace shell
@@ -125,8 +125,8 @@ Implemented:
 - Manifest V3 output for Chromium browsers
 - Popup launcher with background-worker health check
 - Full workspace shell with six module routes; JSON Studio, JWT Inspector, API
-  Builder, Network Inspector, and Local AI Assistant are functional; Page
-  Inspector remains future work
+  Builder, Network Inspector, Local AI Assistant, and Page Inspector are
+  functional
 - JSON Studio with a CodeMirror 6 editor, format, minify, validate, indentation,
   copy, swap, and clear actions
 - Worker-backed JSON parsing with a synchronous fallback for environments
@@ -152,7 +152,11 @@ Implemented:
   actions, and in-memory conversation state
 - Local AI Chat, Explain code, Review code, and Debug modes with developer
   prompt templates and explicitly entered code, language, and error context
-- Typed background messaging and page-metadata contract
+- Page Inspector with an explicit Inspect page action and read-only Overview,
+  Structure, Links, Images, Forms, and Accessibility sections
+- On-demand `activeTab` + `scripting` content-script injection, bounded
+  inspection collections, and form metadata from labels and attributes only
+- Typed background messaging, page-metadata, and page-inspection contracts
 - Storage wrapper with a dev fallback outside extensions
 - Premium dark design system, responsive layout, and inline icon set
 - Tests plus a post-build artifact verifier
@@ -164,7 +168,7 @@ Not implemented yet:
   copy-as-cURL/fetch
 - Local AI automatic payload context, saved conversation history,
   cross-session chats, and retrieval
-- Page Inspector and content-script registration
+- Page Inspector Open Graph, script, and stylesheet panels
 - Firefox support (Chromium-only manifest and `chrome.*` APIs)
 
 ## JSON Studio
@@ -243,6 +247,36 @@ by code block.
   page content, network requests, tokens, cookies, and authorization headers are
   never collected automatically. Saved conversations and cross-session history
   are not implemented.
+
+Automated tests and the production build pass. The manual Chrome/Edge/Brave
+smoke test is still pending.
+
+## Page Inspector
+
+Open the page you want to inspect, click the DevLens toolbar icon, and choose
+**Page Inspector**. Select **Inspect page** to take a read-only snapshot of the
+active tab: overview metadata, heading hierarchy, links, images, forms, and
+lightweight accessibility signals.
+
+- The extension captures the active tab when you open the workspace from the
+  popup. It injects `content.js` on demand with `activeTab` and `scripting` only
+  after you press Inspect; there is no persistent content script and no
+  always-on host access.
+- **Overview** shows the title, URL, meta description, canonical URL, language,
+  and viewport. **Structure** shows bounded H1-H6 text, missing H1, and heading
+  level jumps. **Links**, **Images**, and **Forms** report their attributes and
+  flags, including empty link text, missing image alt text, and unlabeled form
+  controls.
+- Forms are inspected through labels and attributes. DevLens never reads or
+  displays entered values, passwords, cookies, local or session storage, or
+  authentication data.
+- Accessibility findings are lightweight heuristics only. They do not claim
+  WCAG compliance or replace a full audit.
+- Snapshots stay in memory and are never persisted, transmitted, or attached to
+  Local AI automatically. **Clear** discards the snapshot. Restricted pages such
+  as browser internals and the Web Store cannot be inspected; opening Page
+  Inspector without a captured target tab shows instructions instead.
+- Collections are bounded so large pages stay responsive.
 
 Automated tests and the production build pass. The manual Chrome/Edge/Brave
 smoke test is still pending.

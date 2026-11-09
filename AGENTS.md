@@ -15,11 +15,15 @@
   checks, `/api/tags` model discovery, persisted endpoint/model selection,
   streamed `/api/chat`, safe Markdown/code rendering, cancellation, in-memory
   conversations, and explicit code assistance modes with prompt templates and
-  user-entered code/error context. Collections, automatic Local AI payload
-  context, saved histories, and Page Inspector remain scaffolds unless their
+  user-entered code/error context. Page Inspector is implemented and tested:
+  explicit active-tab inspection, bounded overview/structure/links/images/forms
+  collection, lightweight accessibility heuristics, and on-demand
+  `activeTab` + `scripting` content-script injection. Collections, automatic
+  Local AI payload context, and saved histories remain future work unless their
   milestone is explicitly requested.
-  Manual Chrome/Edge/Brave smoke testing for API Builder, Network Inspector, and
-  Local AI is still pending. Treat JSON Studio as the reference feature.
+  Manual Chrome/Edge/Brave smoke testing for API Builder, Network Inspector,
+  Local AI, and Page Inspector is still pending. Treat JSON Studio as the
+  reference feature.
 
 ## Commands
 
@@ -41,8 +45,9 @@
 - API Builder keeps the pure execution contract in `src/features/api/api-execution.ts`, the background executor in `src/background/api-execution.ts`, and the UI client in `src/services/api-execution.ts`. Send checks `hasOriginPermission` first, then requests only from the click when missing. Origin patterns use protocol plus hostname and omit ports.
 - Local AI Stage 2A/2B/2C keeps the pure loopback validator and `/api/tags` parser in `src/features/ai/ollama.ts`, the NDJSON stream parser in `src/features/ai/chat.ts`, the safe Markdown parser/renderer in `src/features/ai/markdown.ts` and `markdown-message.tsx`, the pure mode/template/context contract in `src/features/ai/assist.ts`, the provider contract in `src/features/ai/provider.ts`, and the Ollama fetch client in `src/services/local-ai.ts`. The workspace screen and `LocalAiChat` fetch directly after an optional-origin permission request; they do not use the background. `LocalAiAssistFields` only renders the task, template, code, language, and error inputs. Validate loopback before requesting or fetching, keep `credentials: "omit"` and `redirect: "error"`, and document `OLLAMA_ORIGINS` rather than implying CORS always works. `/api/chat` streams NDJSON with a 120 s inactivity timeout, a 2 MB capped response, and `AbortController` cancellation. Providers accept a validated `system` message for one explicit developer-context prompt. Conversation messages and explicitly entered code/errors stay in memory only; no prompts, code, payloads, responses, or histories are persisted, and page/network/API data is never attached automatically. Render Markdown as React nodes, never with `dangerouslySetInnerHTML`, and do not add a Markdown dependency.
 - Network export is split into pure `network-curl.ts` and `network-har.ts`, with clipboard/download side effects in `network-io.ts`. HAR includes only response bodies the user explicitly loaded, capped at 1 MiB; generated commands and HAR payloads stay in memory and are never persisted or logged. Do not add permissions or automatic export.
+- Page Inspector keeps the typed contract, bounded DOM collector, and runtime guards in `src/features/page/page-inspection.ts`, the injection/messaging client in `src/services/page-inspection.ts`, and the content handler in `src/content/index.ts`. `openWorkspace()` captures the active tab id and passes `?targetTabId=<id>` before the hash route. Inspect injects `content.js` with `activeTab` + `scripting` only after the user acts. Never read entered form values, passwords, cookies, storage, or auth data; derive form metadata from labels and attributes only. Keep the content script out of `content_scripts`, keep snapshots in memory, and never persist, transmit, mutate the page, or attach snapshots to Local AI automatically.
 - CodeMirror 6 owns the JSON editor. Keep the package set minimal (`@codemirror/{state,view,commands,language,lang-json}` plus `@lezer/highlight`); do not add editor wrappers or UI libraries.
-- The content script builds but is intentionally not registered in the manifest, to avoid host access. Register it only when Page Inspector needs it, and update docs/permissions.
+- The content script builds but is intentionally not registered under `content_scripts`, to avoid persistent host access. Page Inspector injects it on demand through `chrome.scripting.executeScript` after the user presses Inspect. Do not add always-on host access.
 - `src/shared/modules.ts` owns module metadata and hash routing; `src/features/registry.ts` maps ids to screens. Add a module in both.
 - Workspace routes are `#/<moduleId>`; unknown routes fall back to `json`. Popup opens the workspace with `openWorkspace()`.
 - `src/shared` is pure types/constants. `src/services` wraps chrome APIs. `src/components` is shared UI. Feature logic belongs in `src/features/<module>/`.
@@ -51,7 +56,9 @@
 
 - Tailwind v4 is CSS-first: tokens and base styles live in `src/styles/index.css`; there is no `tailwind.config.*`. Use the existing `cn` helper and components.
 - No icon, font, or animation libraries. Icons are inline SVG in `src/components/icons.tsx`; fonts are system stacks (MV3 CSP allows no remote assets). CodeMirror is the only editor dependency.
-- Active permissions are intentionally minimal (`storage` only).
+- Active permissions are intentionally minimal (`storage`, `activeTab`, and
+  `scripting`). `activeTab`/`scripting` power user-initiated Page Inspector
+  injection; there is no `content_scripts` registration.
   `optional_host_permissions` declares HTTP(S) origins for user-initiated API
   sends and local Ollama checks. API Builder's background only checks access;
   Send and Local AI request an origin from the user gesture when missing, and
@@ -59,8 +66,8 @@
   updating `manifest.json`, `docs/ARCHITECTURE.md`, and tests.
 - Version lives in both `package.json` and `public/manifest.json`; `src/manifest.test.ts` fails if they drift.
 - Strict TS uses `noUncheckedIndexedAccess` and `verbatimModuleSyntax`; use `import type` for type-only imports.
-- No fake data or believable placeholder UI. Unshipped module screens stay explicitly labelled scaffolds until their milestone lands; JSON Studio, JWT Inspector, API Builder through Stage 3B-3, Network Inspector through Stage 1C, and Local AI Stage 2A/2B/2C are functional exceptions.
-- Tests run in two Vitest projects: `node` for pure logic (including `json-core`, API execution contracts, Ollama endpoint/model parsing, Local AI mode/template/context validation, chat NDJSON parsing, Markdown parsing, response formatting, cURL generation, and HAR serialization), `dom` (jsdom) for components/storage, the JSON tree/screen, API Builder send/response states, network export actions, Local AI connection/model states, chat streaming, explicit code/error context, and Markdown/code rendering. Mock `chrome` with `vi.stubGlobal`; cleanup is in `src/test/setup.ts`.
+- No fake data or believable placeholder UI. All six module screens are functional; Collections, saved histories, and automatic AI context remain future work. JSON Studio, JWT Inspector, API Builder through Stage 3B-3, Network Inspector through Stage 1C, Local AI Stage 2A/2B/2C, and Page Inspector are implemented.
+- Tests run in two Vitest projects: `node` for pure logic (including `json-core`, API execution contracts, Ollama endpoint/model parsing, Local AI mode/template/context validation, chat NDJSON parsing, Markdown parsing, response formatting, cURL generation, and HAR serialization), `dom` (jsdom) for components/storage, the JSON tree/screen, API Builder send/response states, network export actions, Local AI connection/model states, chat streaming, explicit code/error context, Markdown/code rendering, and Page Inspector collection, content handling, injection, privacy limits, and screen states. Mock `chrome` with `vi.stubGlobal`; cleanup is in `src/test/setup.ts`.
 
 ## Gotchas
 

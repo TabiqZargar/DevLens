@@ -12,6 +12,7 @@ interface Manifest {
   permissions: string[];
   optional_host_permissions?: string[];
   host_permissions?: string[];
+  content_scripts?: unknown[];
   background: { service_worker: string; type: string };
   action: { default_popup: string };
   devtools_page: string;
@@ -36,8 +37,13 @@ describe("Manifest V3 contract", () => {
     ) as Manifest;
 
     expect(manifest.manifest_version).toBe(3);
-    expect(manifest.permissions).toEqual(["storage"]);
+    expect(manifest.permissions).toEqual([
+      "storage",
+      "activeTab",
+      "scripting",
+    ]);
     expect(manifest.host_permissions).toBeUndefined();
+    expect(manifest.content_scripts).toBeUndefined();
     expect(manifest.optional_host_permissions).toEqual([
       "http://*/*",
       "https://*/*",

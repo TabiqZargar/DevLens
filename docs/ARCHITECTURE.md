@@ -33,8 +33,8 @@ DevTools (F12)
 background.js (MV3 service worker)
   └─ typed runtime messages
 
-content.js (built, not registered)
-  └─ page metadata request handler, ready for Page Inspector
+content.js (on-demand injected; not a manifest content script)
+  └─ page inspection collector + legacy page metadata handler
 ```
 
 ### Popup
@@ -49,7 +49,9 @@ connection state. It does not hold feature state.
 `#/<moduleId>`; unknown routes fall back to `json`. `src/shared/modules.ts` is
 the source of module metadata, and `src/features/registry.ts` maps module ids to
 screens. Navigation updates the hash; the shell resets the `<main>` scroll
-container on route changes.
+container on route changes. When the popup opens Page Inspector,
+`openWorkspace()` resolves the active tab and adds `?targetTabId=<id>` before
+the hash route so the workspace knows which tab to inspect.
 
 ### JSON Studio
 
@@ -196,6 +198,35 @@ boundary note documents that Ollama may need `OLLAMA_ORIGINS` set for the
 extension origin; the UI does not imply that loopback connectivity is
 automatic.
 
+### Page Inspector
+
+`src/features/page/page-inspection.ts` owns the typed inspection contract and a
+pure DOM collector. It reads the title, URL, meta description, canonical URL,
+language, and viewport; normalizes H1-H6 headings with missing-H1 and
+heading-level-jump flags; captures bounded links, images, forms, and form
+controls; and derives lightweight accessibility findings. Form controls are
+described only through labels and attributes: the collector never reads an
+input value, password, cookie, storage entry, or authentication state. All
+collections, text, URLs, and findings are bounded, and runtime type guards
+validate the cross-context response.
+
+`src/services/page-inspection.ts` performs the user-initiated inspection. It
+validates the target tab id, calls `chrome.scripting.executeScript` to inject
+`content.js`, sends `devlens:page-inspect`, and validates the response. Failures
+map to fixed `no-target`, `runtime-unavailable`, `restricted`, `no-response`, or
+`invalid-response` states. `src/content/index.ts` registers a message listener
+once per page, answers the inspection request with `collectPageInspection`, and
+keeps the legacy `devlens:page-metadata` handler.
+
+`PageInspectorScreen.tsx` renders an explicit Inspect page action and idle,
+loading, ready, and error states. The ready state switches between Overview,
+Structure, Links, Images, Forms, and Accessibility without mutating the page.
+A snapshot lives only in component state; Clear discards it. Inspection content
+is never persisted, transmitted, or attached to Local AI automatically, and the
+Accessibility section states that its findings are heuristics rather than a WCAG
+compliance claim. Opening the route without a captured target tab shows
+instructions because the workspace cannot reliably inspect itself.
+
 ### DevTools
 
 `devtools.html` runs `src/devtools/index.ts`, which calls
@@ -249,12 +280,14 @@ remain usable where `window` and `localStorage` do not exist.
 
 ### Content script
 
-`src/content/index.ts` answers `devlens:page-metadata` with the page title, URL,
-and capture time. It is built as a self-contained classic IIFE but is
-intentionally **not registered** in the manifest yet. Registering it now would
-grant access to every HTTP(S) page before Page Inspector exists. When that
-milestone lands, prefer on-demand injection (`activeTab` + `scripting`) or a
-narrow host list, then document the permission change.
+`src/content/index.ts` is built as a self-contained classic IIFE and answers
+both `devlens:page-inspect` and the legacy `devlens:page-metadata` request. It is
+loaded only through `chrome.scripting.executeScript` after the user presses
+Inspect, so it is **not registered** under `content_scripts` and grants no
+always-on host access. A global guard prevents duplicate listeners when the
+script is injected repeatedly into the same page. The Page Inspector screen
+reaches it through `src/services/page-inspection.ts`; the legacy metadata
+contract remains for compatibility.
 
 ## Build pipeline
 
@@ -277,9 +310,9 @@ classic scripts and cannot import modules.
 
 `public/` is copied by the page build. `public/manifest.json` references the
 generated `background.js`; `content.js` is built and verifier-checked but is not
-yet referenced by the manifest. Renaming either worker requires updating
-`scripts/build-scripts.mjs` and `scripts/verify-build.mjs`, plus the manifest for
-any file it references.
+referenced by the manifest because Page Inspector injects it on demand. Renaming
+either worker requires updating `scripts/build-scripts.mjs` and
+`scripts/verify-build.mjs`, plus the manifest for any file it references.
 
 `scripts/verify-build.mjs` parses `dist/manifest.json` and checks every page,
 worker, content script, and icon it references. `dist/` is generated and is not
@@ -289,8 +322,10 @@ committed.
 
 `src/shared/messaging.ts` owns requests that cross the shared boundary:
 `devlens:ping` to the background and `devlens:page-metadata` to the content
-script. The background responds to `devlens:ping`; content responds to
-`devlens:page-metadata`. `src/services/messaging.ts` wraps
+script. The background responds to `devlens:ping`; injected content responds to
+`devlens:page-metadata`. The Page Inspector contract lives in
+`src/features/page/page-inspection.ts` as `devlens:page-inspect`, with request,
+result, response, and runtime type guards. `src/services/messaging.ts` wraps
 `chrome.runtime.sendMessage` and converts delivery failures into a structured
 `{ ok: false, error }` result.
 
@@ -315,14 +350,18 @@ messages are not persisted.
 
 ## Permissions and cross-browser support
 
-Current permissions: `storage` only. `optional_host_permissions` declares
-`http://*/*` and `https://*/*` so a user-initiated API Send or Local AI
-connection check or chat send can request a single origin without granting
-access up front.
+Current permissions: `storage`, `activeTab`, and `scripting`.
+`optional_host_permissions` declares `http://*/*` and `https://*/*` so a
+user-initiated API Send or Local AI connection check or chat send can request a
+single origin without granting access up front.
 
-- `chrome.tabs.create` for opening the workspace does not require `tabs`.
+- `chrome.tabs.create` for opening the workspace does not require `tabs`;
+  `chrome.tabs.query` returns the active tab id without broad host access.
 - DevTools panels require only the `devtools_page` manifest key.
-- The content script is built but not registered, so no host access is granted.
+- The content script is not registered under `content_scripts`, so no host
+  access is granted up front. Page Inspector injects `content.js` with
+  `activeTab` + `scripting` only after the user presses Inspect. Opening the
+  extension popup grants `activeTab` for that tab.
 - API Builder execution checks `chrome.permissions.contains` for the request
   origin and returns `permission-denied` rather than prompting from the service
   worker. The Send click checks first, then calls `requestOriginPermission` from
@@ -332,8 +371,9 @@ access up front.
   network call, then uses the same user-gesture permission flow. The provider
   re-checks access before fetching and rejects redirects, so a validated
   endpoint cannot become a remote request.
-- Future Page Inspector work should use `activeTab` or a user-triggered injection
-  path rather than broad always-on host access.
+- Page Inspector never requests broad host access. It reads only a snapshot of
+  the user-selected active tab and never mutates or continuously monitors the
+  page.
 
 Chrome, Edge, and Brave all implement MV3 and the `chrome.*` namespace, so the
 same `dist/` is loadable in each. Firefox is out of scope: it needs a different

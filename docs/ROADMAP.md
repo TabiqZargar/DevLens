@@ -302,17 +302,42 @@ Shipped:
 Remaining for this milestone: automatic payload context, saved history,
 retrieval, and manual Chrome/Edge/Brave smoke testing.
 
-## Milestone 5 — Page Inspector
+## Milestone 5 — Page Inspector (implemented)
 
-- Register the content script only when the feature is used.
-- Prefer `activeTab` + `scripting` injection over broad host access.
-- Show title, URL, metadata, Open Graph tags, scripts, styles, and images.
-- Flag accessibility basics: landmarks, missing labels, lang, and alt text.
-- Keep all inspection local and scoped to the active tab.
+Shipped:
+
+- Explicit Inspect page action with idle, loading, ready, and error states, and
+  a Clear action that discards the in-memory snapshot.
+- Overview metadata: title, URL, meta description, canonical URL, language, and
+  viewport.
+- Heading hierarchy with missing-H1 and heading-level-jump flags, plus links,
+  images, and forms with bounded collections and explicit empty states.
+- Link text, destination, target, new-tab, and empty/missing-text flags; image
+  source, alt text, natural/display dimensions, and missing-alt flags.
+- Form action, method, control names/types, labels, placeholders, and
+  required/disabled state. Entered values, passwords, cookies, storage, and
+  authentication data are never read.
+- Lightweight accessibility findings for missing alt text, unlabeled controls,
+  empty links, missing title/lang/meta/viewport, missing or multiple H1,
+  heading jumps, and a missing main landmark. The UI qualifies these as
+  heuristics, not a WCAG compliance claim.
+- On-demand `activeTab` + `scripting` injection of the built `content.js`; no
+  `content_scripts` registration and no broad host access. The popup captures
+  the active tab id and passes it before the hash route.
+- Restricted pages and missing target tabs fail gracefully, and snapshots stay
+  in memory without persistence, external transmission, page mutation, or
+  automatic Local AI attachment.
+- Collector, content-handler, injection-service, and screen tests covering
+  privacy boundaries, limits, explicit action, restricted pages, missing target,
+  loading, errors, and clearing.
+
+Remaining: Open Graph, script, and stylesheet panels; manual Chrome/Edge/Brave
+smoke testing.
 
 Acceptance: no host access is granted before the user acts; the content script
-does not run on pages where it is not needed; permissions are documented here
-and in the manifest.
+runs only on the active tab after Inspect; collections are bounded; snapshots
+are never persisted or transmitted; permissions are documented here and in the
+manifest.
 
 ## Hardening and release
 
