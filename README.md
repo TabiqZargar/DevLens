@@ -7,14 +7,15 @@ and testing web APIs without sending developer data to a backend.
 This repository ships the extension foundation plus **JSON Studio**,
 **JWT Inspector**, the **API Builder** request editor with send and response
 inspection, **Network Inspector**, and the **Local AI Assistant** with streamed
-Ollama chat. JSON is formatted, minified, validated, and explored entirely
-on-device, JWTs are decoded and inspected without verification or network
-access, and API requests are sent only when you press Send and grant Chrome
-access to that origin. Network Inspector captures requests in an in-memory
-DevTools session, and Local AI chats only with a validated loopback Ollama
-endpoint without persisting prompts, responses, or conversation history.
-Collections, Local AI payload context, and Page Inspector remain scaffolded or
-future work.
+Ollama chat and explicit code assistance. JSON is formatted, minified,
+validated, and explored entirely on-device, JWTs are decoded and inspected
+without verification or network access, and API requests are sent only when you
+press Send and grant Chrome access to that origin. Network Inspector captures
+requests in an in-memory DevTools session, and Local AI chats only with a
+validated loopback Ollama endpoint without persisting prompts, responses, code,
+or conversation history. Collections and Page Inspector remain scaffolded or
+future work; automatic payload context and saved Local AI history are not
+implemented.
 
 ## Stack
 
@@ -149,6 +150,8 @@ Implemented:
 - Local AI chat with streamed `/api/chat` responses, multiline composer,
   cancellation, New chat, Copy response, safe Markdown/code rendering, code-copy
   actions, and in-memory conversation state
+- Local AI Chat, Explain code, Review code, and Debug modes with developer
+  prompt templates and explicitly entered code, language, and error context
 - Typed background messaging and page-metadata contract
 - Storage wrapper with a dev fallback outside extensions
 - Premium dark design system, responsive layout, and inline icon set
@@ -159,7 +162,8 @@ Not implemented yet:
 - JWT signature verification
 - API Builder collections, environments, request history, and
   copy-as-cURL/fetch
-- Local AI payload context, saved conversation history, and cross-session chats
+- Local AI automatic payload context, saved conversation history,
+  cross-session chats, and retrieval
 - Page Inspector and content-script registration
 - Firefox support (Chromium-only manifest and `chrome.*` APIs)
 
@@ -208,19 +212,22 @@ Chrome/Edge/Brave smoke test is still pending.
 Open the workspace, choose **Local AI Assistant**, and confirm the Ollama
 endpoint (default `http://127.0.0.1:11434`). **Check connection** asks Chrome
 for access to that loopback origin, then calls `GET /api/tags` and lists the
-models installed on the machine. Select a model, type a message, and send with
-**Send** or `Enter`; use `Shift` + `Enter` for a newline. **Stop** cancels a
-stream, **New chat** clears the in-memory transcript, and completed replies can
-be copied whole or by code block.
+models installed on the machine. Select a model, choose **Chat**, **Explain
+code**, **Review code**, or **Debug**, and send with **Send** or `Enter`; use
+`Shift` + `Enter` for a newline. Explain, Review, and Debug provide prompt
+templates and explicitly entered code, language, and error fields. Debug accepts
+code, error output, or both. **Stop** cancels a stream, **New chat** clears the
+in-memory transcript and context, and completed replies can be copied whole or
+by code block.
 
 - Only loopback HTTP(S) endpoints on `localhost`, `127.0.0.1`, or `[::1]` are
   accepted. Remote URLs, credentials, paths, queries, and fragments are
   rejected before any permission prompt or request.
 - The endpoint and selected model are stored in `chrome.storage.local`.
-  Connection status, discovered models, prompts, responses, and conversation
-  messages stay in memory. API keys, payload context, and chat history are
-  never persisted, and page, network, or API data is never attached
-  automatically.
+  Connection status, discovered models, prompts, responses, conversation
+  messages, and explicitly entered code or errors stay in memory. API keys and
+  chat history are never persisted, and page, network, or API data is never
+  attached automatically.
 - Connection checks use `credentials: "omit"`, reject redirects, time out after
   5 seconds, and cap metadata at 1 MiB. Chat posts to `/api/chat` with
   `stream: true`, parses NDJSON incrementally, times out after 120 seconds of
@@ -232,8 +239,10 @@ be copied whole or by code block.
 - If Chrome blocks the request, restart Ollama with
   `OLLAMA_ORIGINS=chrome-extension://*` so the extension origin is allowed.
   Loopback alone does not guarantee that the browser request is accepted.
-- Payload context, saved conversations, and cross-session history are not
-  implemented in this stage.
+- Only code and error text entered in the Local AI fields are attached; files,
+  page content, network requests, tokens, cookies, and authorization headers are
+  never collected automatically. Saved conversations and cross-session history
+  are not implemented.
 
 Automated tests and the production build pass. The manual Chrome/Edge/Brave
 smoke test is still pending.

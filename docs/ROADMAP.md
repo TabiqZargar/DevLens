@@ -231,7 +231,8 @@ Remaining API Builder work:
 
 - Settings for the Ollama endpoint, default `http://127.0.0.1:11434`.
 - Health check and model list from the local endpoint.
-- Streaming explanations for selected JSON/network payloads.
+- Streaming explanations for explicitly selected code or errors, without
+  automatic payload attachment.
 - In-memory conversation context with explicit clear.
 - Clear offline/unavailable states.
 
@@ -280,8 +281,26 @@ Shipped:
   composer behavior, error states, and safe rendering. Conversations, prompts,
   and responses stay in memory only.
 
-Remaining for this milestone: payload context, saved history, and manual
-Chrome/Edge/Brave smoke testing.
+### Stage 2C — Developer context and code assistance (implemented)
+
+Shipped:
+
+- Chat, Explain code, Review code, and Debug modes in the existing in-memory
+  Local AI chat.
+- Mode-specific developer prompt templates that fill the composer and can be
+  edited before sending.
+- Explicit code, language, and error fields. Explain and Review require code;
+  Debug accepts code, error output, or both.
+- One constrained system message that marks supplied code and errors as
+  untrusted data, includes no automatic page/network/API data, and is sent only
+  when the user presses Send.
+- Provider `system` role support plus pure mode, template, validation, and
+  prompt-building tests.
+- New chat clears the transcript, mode, template, and explicit context. No
+  context or conversation is persisted.
+
+Remaining for this milestone: automatic payload context, saved history,
+retrieval, and manual Chrome/Edge/Brave smoke testing.
 
 ## Milestone 5 — Page Inspector
 

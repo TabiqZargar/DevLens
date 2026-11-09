@@ -95,6 +95,23 @@ function sendButton(): HTMLButtonElement {
   }) as HTMLButtonElement;
 }
 
+interface SentMessage {
+  role: string;
+  content: string;
+}
+
+function sentMessages(
+  fetchMock: ReturnType<typeof vi.fn>,
+): SentMessage[] {
+  const call = fetchMock.mock.calls[0];
+  const init = (call?.[1] ?? {}) as RequestInit;
+  const body = JSON.parse(String(init.body)) as {
+    messages: SentMessage[];
+  };
+
+  return body.messages;
+}
+
 afterEach(() => {
   vi.unstubAllGlobals();
   Reflect.deleteProperty(window.navigator, "clipboard");
@@ -194,8 +211,213 @@ describe("LocalAiChat", () => {
     fireEvent.click(screen.getByRole("button", { name: "New chat" }));
     expect(screen.queryByText("Explain lenses")).not.toBeInTheDocument();
     expect(
-      screen.getByText("Start a local conversation"),
+      screen.getByText("Start a local developer session"),
     ).toBeInTheDocument();
+  });
+
+  it("attaches explicit code and a selected template", async () => {
+    stubChrome();
+    const fetchMock = vi.fn(async () =>
+      staticResponse([
+        chatLine({
+          message: { role: "assistant", content: "Explained" },
+          done: false,
+        }),
+        chatLine({ done: true }),
+      ]),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    renderChat();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Explain code" }),
+    );
+    expect(sendButton()).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText("Code"), {
+      target: {
+        value: "const total = items.reduce((sum, item) => sum + item, 0);",
+      },
+    });
+    fireEvent.change(screen.getByLabelText("Language"), {
+      target: { value: "ts" },
+    });
+    fireEvent.change(
+      screen.getByRole("combobox", { name: "Prompt template" }),
+      { target: { value: "explain-step-by-step" } },
+    );
+
+    const question = composer().value;
+
+    expect(question).toContain("Walk through this code step by step");
+    expect(sendButton()).toBeEnabled();
+
+    fireEvent.click(sendButton());
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    const messages = sentMessages(fetchMock);
+
+    expect(messages).toHaveLength(2);
+    expect(messages[0]?.role).toBe("system");
+    expect(messages[0]?.content).toContain(
+      "Task: explain the supplied code.",
+    );
+    expect(messages[0]?.content).toContain("```ts");
+    expect(messages[0]?.content).toContain(
+      "const total = items.reduce",
+    );
+    expect(messages[1]).toEqual({
+      role: "user",
+      content: question,
+    });
+  });
+
+  it("supports an error-only debug request", async () => {
+    stubChrome();
+    const fetchMock = vi.fn(async () =>
+      staticResponse([
+        chatLine({
+          message: { role: "assistant", content: "Diagnosis" },
+          done: false,
+        }),
+        chatLine({ done: true }),
+      ]),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    renderChat();
+
+    fireEvent.click(screen.getByRole("button", { name: "Debug" }));
+    expect(sendButton()).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText("Error output"), {
+      target: {
+        value: "TypeError: Cannot read properties of undefined",
+      },
+    });
+    expect(sendButton()).toBeEnabled();
+
+    fireEvent.click(sendButton());
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    const messages = sentMessages(fetchMock);
+
+    expect(messages[0]?.role).toBe("system");
+    expect(messages[0]?.content).toContain("No code was supplied.");
+    expect(messages[0]?.content).toContain(
+      "TypeError: Cannot read properties of undefined",
+    );
+  });
+
+  it("clears transcript, mode, template, and context on New chat", async () => {
+    stubChrome();
+    const fetchMock = vi.fn(async () =>
+      staticResponse([
+        chatLine({
+          message: { role: "assistant", content: "Diagnosis" },
+          done: false,
+        }),
+        chatLine({ done: true }),
+      ]),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    renderChat();
+
+    fireEvent.click(screen.getByRole("button", { name: "Debug" }));
+    fireEvent.change(screen.getByLabelText("Code"), {
+      target: { value: "const value = user.profile.name;" },
+    });
+    fireEvent.change(screen.getByLabelText("Language"), {
+      target: { value: "ts" },
+    });
+    fireEvent.change(screen.getByLabelText("Error output"), {
+      target: {
+        value: "TypeError: Cannot read properties of undefined",
+      },
+    });
+    fireEvent.change(
+      screen.getByRole("combobox", { name: "Prompt template" }),
+      { target: { value: "debug-root-cause" } },
+    );
+    fireEvent.change(composer(), {
+      target: { value: "Diagnose this failure" },
+    });
+
+    expect(
+      screen.getByRole("button", { name: "Debug" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(
+      screen.getByRole("combobox", { name: "Prompt template" }),
+    ).toHaveValue("debug-root-cause");
+    expect(screen.getByLabelText("Code")).toHaveValue(
+      "const value = user.profile.name;",
+    );
+    expect(screen.getByLabelText("Language")).toHaveValue("ts");
+    expect(screen.getByLabelText("Error output")).toHaveValue(
+      "TypeError: Cannot read properties of undefined",
+    );
+
+    fireEvent.click(sendButton());
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+    expect(await screen.findByText("Diagnosis")).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: "New chat" }),
+      ).toBeEnabled();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "New chat" }));
+
+    expect(
+      screen.queryByText("Diagnose this failure"),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Diagnosis")).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Start a local developer session"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Chat" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(
+      screen.queryByRole("combobox", { name: "Prompt template" }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Debug" }));
+
+    expect(screen.getByLabelText("Code")).toHaveValue("");
+    expect(screen.getByLabelText("Language")).toHaveValue("");
+    expect(screen.getByLabelText("Error output")).toHaveValue("");
+    expect(
+      screen.getByRole("combobox", { name: "Prompt template" }),
+    ).toHaveValue("debug-diagnose");
+  });
+
+  it("preserves a custom draft when switching task modes", () => {
+    renderChat();
+
+    fireEvent.change(composer(), {
+      target: { value: "Compare these approaches" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Explain code" }),
+    );
+    expect(composer()).toHaveValue("Compare these approaches");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Review code" }),
+    );
+    expect(composer()).toHaveValue("Compare these approaches");
+
+    fireEvent.click(screen.getByRole("button", { name: "Chat" }));
+    expect(composer()).toHaveValue("Compare these approaches");
   });
 
   it("sends on Enter but not Shift+Enter", async () => {

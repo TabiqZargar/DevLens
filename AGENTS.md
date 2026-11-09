@@ -10,12 +10,14 @@
   response cap are wired. Network Inspector Stage 1A/1B/1C is implemented and
   tested: live capture, a bounded in-memory session, pause/clear, filtering,
   request details, normalized initiator data, on-demand response-body
-  previews, Copy as cURL, and HAR export. Local AI Assistant Stage 2A/2B is
+  previews, Copy as cURL, and HAR export. Local AI Assistant Stage 2A/2B/2C is
   implemented and tested: loopback-only Ollama endpoint validation, connection
   checks, `/api/tags` model discovery, persisted endpoint/model selection,
-  streamed `/api/chat`, safe Markdown/code rendering, cancellation, and
-  in-memory conversations. Collections, Local AI payload context, and Page
-  Inspector remain scaffolds unless their milestone is explicitly requested.
+  streamed `/api/chat`, safe Markdown/code rendering, cancellation, in-memory
+  conversations, and explicit code assistance modes with prompt templates and
+  user-entered code/error context. Collections, automatic Local AI payload
+  context, saved histories, and Page Inspector remain scaffolds unless their
+  milestone is explicitly requested.
   Manual Chrome/Edge/Brave smoke testing for API Builder, Network Inspector, and
   Local AI is still pending. Treat JSON Studio as the reference feature.
 
@@ -37,7 +39,7 @@
 - `public/manifest.json` is copied verbatim. Renaming a build output requires changes in `scripts/build-scripts.mjs` and `scripts/verify-build.mjs`; update the manifest too when it references that file (`background.js` today, `content.js` once registered). The JSON worker is a Vite-hashed, non-manifest asset; do not hardcode its filename.
 - JSON processing is pure in `src/features/json/json-core.ts`, shared by `json-worker.ts` and the synchronous fallback. Keep Chrome APIs, DOM, storage, network, and `eval` out of the core and worker. JSON Studio must never persist payloads or add history without an explicit requirement.
 - API Builder keeps the pure execution contract in `src/features/api/api-execution.ts`, the background executor in `src/background/api-execution.ts`, and the UI client in `src/services/api-execution.ts`. Send checks `hasOriginPermission` first, then requests only from the click when missing. Origin patterns use protocol plus hostname and omit ports.
-- Local AI Stage 2A/2B keeps the pure loopback validator and `/api/tags` parser in `src/features/ai/ollama.ts`, the NDJSON stream parser in `src/features/ai/chat.ts`, the safe Markdown parser/renderer in `src/features/ai/markdown.ts` and `markdown-message.tsx`, the provider contract in `src/features/ai/provider.ts`, and the Ollama fetch client in `src/services/local-ai.ts`. The workspace screen and `LocalAiChat` fetch directly after an optional-origin permission request; they do not use the background. Validate loopback before requesting or fetching, keep `credentials: "omit"` and `redirect: "error"`, and document `OLLAMA_ORIGINS` rather than implying CORS always works. `/api/chat` streams NDJSON with a 120 s inactivity timeout, a 2 MB capped response, and `AbortController` cancellation. Conversation messages stay in memory only; no prompts, payloads, responses, or histories are persisted, and page/network/API data is never attached automatically. Render Markdown as React nodes, never with `dangerouslySetInnerHTML`, and do not add a Markdown dependency.
+- Local AI Stage 2A/2B/2C keeps the pure loopback validator and `/api/tags` parser in `src/features/ai/ollama.ts`, the NDJSON stream parser in `src/features/ai/chat.ts`, the safe Markdown parser/renderer in `src/features/ai/markdown.ts` and `markdown-message.tsx`, the pure mode/template/context contract in `src/features/ai/assist.ts`, the provider contract in `src/features/ai/provider.ts`, and the Ollama fetch client in `src/services/local-ai.ts`. The workspace screen and `LocalAiChat` fetch directly after an optional-origin permission request; they do not use the background. `LocalAiAssistFields` only renders the task, template, code, language, and error inputs. Validate loopback before requesting or fetching, keep `credentials: "omit"` and `redirect: "error"`, and document `OLLAMA_ORIGINS` rather than implying CORS always works. `/api/chat` streams NDJSON with a 120 s inactivity timeout, a 2 MB capped response, and `AbortController` cancellation. Providers accept a validated `system` message for one explicit developer-context prompt. Conversation messages and explicitly entered code/errors stay in memory only; no prompts, code, payloads, responses, or histories are persisted, and page/network/API data is never attached automatically. Render Markdown as React nodes, never with `dangerouslySetInnerHTML`, and do not add a Markdown dependency.
 - Network export is split into pure `network-curl.ts` and `network-har.ts`, with clipboard/download side effects in `network-io.ts`. HAR includes only response bodies the user explicitly loaded, capped at 1 MiB; generated commands and HAR payloads stay in memory and are never persisted or logged. Do not add permissions or automatic export.
 - CodeMirror 6 owns the JSON editor. Keep the package set minimal (`@codemirror/{state,view,commands,language,lang-json}` plus `@lezer/highlight`); do not add editor wrappers or UI libraries.
 - The content script builds but is intentionally not registered in the manifest, to avoid host access. Register it only when Page Inspector needs it, and update docs/permissions.
@@ -57,8 +59,8 @@
   updating `manifest.json`, `docs/ARCHITECTURE.md`, and tests.
 - Version lives in both `package.json` and `public/manifest.json`; `src/manifest.test.ts` fails if they drift.
 - Strict TS uses `noUncheckedIndexedAccess` and `verbatimModuleSyntax`; use `import type` for type-only imports.
-- No fake data or believable placeholder UI. Unshipped module screens stay explicitly labelled scaffolds until their milestone lands; JSON Studio, JWT Inspector, API Builder through Stage 3B-3, Network Inspector through Stage 1C, and Local AI Stage 2A/2B are functional exceptions.
-- Tests run in two Vitest projects: `node` for pure logic (including `json-core`, API execution contracts, Ollama endpoint/model parsing, chat NDJSON parsing, Markdown parsing, response formatting, cURL generation, and HAR serialization), `dom` (jsdom) for components/storage, the JSON tree/screen, API Builder send/response states, network export actions, Local AI connection/model states, chat streaming, and Markdown/code rendering. Mock `chrome` with `vi.stubGlobal`; cleanup is in `src/test/setup.ts`.
+- No fake data or believable placeholder UI. Unshipped module screens stay explicitly labelled scaffolds until their milestone lands; JSON Studio, JWT Inspector, API Builder through Stage 3B-3, Network Inspector through Stage 1C, and Local AI Stage 2A/2B/2C are functional exceptions.
+- Tests run in two Vitest projects: `node` for pure logic (including `json-core`, API execution contracts, Ollama endpoint/model parsing, Local AI mode/template/context validation, chat NDJSON parsing, Markdown parsing, response formatting, cURL generation, and HAR serialization), `dom` (jsdom) for components/storage, the JSON tree/screen, API Builder send/response states, network export actions, Local AI connection/model states, chat streaming, explicit code/error context, and Markdown/code rendering. Mock `chrome` with `vi.stubGlobal`; cleanup is in `src/test/setup.ts`.
 
 ## Gotchas
 

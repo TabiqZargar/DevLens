@@ -65,7 +65,9 @@ function isChatRequestValid(
 
   for (const message of messages) {
     if (
-      (message.role !== "user" && message.role !== "assistant") ||
+      (message.role !== "system" &&
+        message.role !== "user" &&
+        message.role !== "assistant") ||
       typeof message.content !== "string" ||
       message.content.trim().length === 0
     ) {

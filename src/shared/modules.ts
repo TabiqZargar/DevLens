@@ -51,9 +51,9 @@ export const MODULES: readonly ModuleDefinition[] = [
   {
     id: "ai",
     name: "Local AI Assistant",
-    tagline: "Ask questions without leaving your machine.",
+    tagline: "Ask, review, and debug code without leaving your machine.",
     description:
-      "Chat with installed Ollama models on localhost. No cloud provider, saved conversations, or telemetry.",
+      "Chat with installed Ollama models and explicitly attach code or errors. No cloud provider, saved conversations, or telemetry.",
     milestone: "Milestone 4",
     surface: "workspace",
   },

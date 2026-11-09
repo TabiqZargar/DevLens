@@ -32,7 +32,7 @@ export type LocalAiConnectionResult =
       error: LocalAiConnectionError;
     };
 
-export type LocalAiChatRole = "user" | "assistant";
+export type LocalAiChatRole = "system" | "user" | "assistant";
 
 export interface LocalAiChatMessage {
   role: LocalAiChatRole;

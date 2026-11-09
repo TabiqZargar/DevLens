@@ -23,17 +23,23 @@ import {
   hasOriginPermission,
   requestOriginPermission,
 } from "../../services/permissions";
+import {
+  assistContextError,
+  buildDeveloperContext,
+  LOCAL_AI_ASSIST_MODES,
+  promptTemplatesFor,
+  resolveAssistQuestion,
+  type LocalAiAssistMode,
+} from "./assist";
+import { LocalAiAssistFields } from "./LocalAiAssistFields";
 import { MarkdownMessage } from "./markdown-message";
-import type {
-  LocalAiChatMessage,
-  LocalAiChatRole,
-} from "./provider";
+import type { LocalAiChatMessage } from "./provider";
 
 type MessageStatus = "complete" | "streaming" | "error" | "stopped";
 
 interface ChatMessage {
   id: string;
-  role: LocalAiChatRole;
+  role: "user" | "assistant";
   content: string;
   status: MessageStatus;
   error?: string;
@@ -59,6 +65,11 @@ export function LocalAiChat({
 }: LocalAiChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
+  const [mode, setMode] = useState<LocalAiAssistMode>("chat");
+  const [templateId, setTemplateId] = useState("");
+  const [code, setCode] = useState("");
+  const [language, setLanguage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [copyState, setCopyState] = useState<CopyState | null>(null);
   const nextIdRef = useRef(0);
@@ -90,6 +101,22 @@ export function LocalAiChat({
     }
   }, [messages]);
 
+  const templates = promptTemplatesFor(mode);
+  const selectedTemplate =
+    templates.find((template) => template.id === templateId) ??
+    templates[0] ??
+    null;
+  const question = draft.trim();
+  const contextError = assistContextError({
+    mode,
+    code,
+    language,
+    errorMessage,
+  });
+  const modeDefinition =
+    LOCAL_AI_ASSIST_MODES.find((item) => item.id === mode) ??
+    LOCAL_AI_ASSIST_MODES[0];
+
   function nextId(prefix: string): string {
     nextIdRef.current += 1;
     return `${prefix}-${nextIdRef.current}`;
@@ -107,10 +134,9 @@ export function LocalAiChat({
   }
 
   async function handleSend() {
-    const content = draft.trim();
-
     if (
-      content.length === 0 ||
+      question.length === 0 ||
+      contextError ||
       streaming ||
       unavailableReason ||
       !endpoint ||
@@ -130,10 +156,23 @@ export function LocalAiChat({
         role: message.role,
         content: message.content,
       }));
+    const developerContext = buildDeveloperContext({
+      mode,
+      code,
+      language,
+      errorMessage,
+    });
+    const requestMessages: LocalAiChatMessage[] = [
+      ...(developerContext
+        ? [{ role: "system" as const, content: developerContext }]
+        : []),
+      ...history,
+      { role: "user", content: question },
+    ];
     const userMessage: ChatMessage = {
       id: nextId("user"),
       role: "user",
-      content,
+      content: question,
       status: "complete",
     };
     const assistantId = nextId("assistant");
@@ -187,10 +226,7 @@ export function LocalAiChat({
       const result = await ollamaProvider.chat({
         endpoint,
         model,
-        messages: [
-          ...history,
-          { role: "user", content },
-        ],
+        messages: requestMessages,
         signal: controller.signal,
         onToken: (token) => {
           if (!mountedRef.current) return;
@@ -246,11 +282,43 @@ export function LocalAiChat({
     controllerRef.current?.abort();
   }
 
+  function handleModeChange(nextMode: LocalAiAssistMode) {
+    if (streaming) return;
+
+    const keepDraft =
+      draft.trim().length > 0 &&
+      draft !== selectedTemplate?.question;
+
+    setMode(nextMode);
+    setTemplateId("");
+
+    if (!keepDraft) {
+      setDraft(resolveAssistQuestion(nextMode, "", null));
+    }
+  }
+
+  function handleTemplateChange(nextTemplateId: string) {
+    const template = promptTemplatesFor(mode).find(
+      (item) => item.id === nextTemplateId,
+    );
+
+    setTemplateId(nextTemplateId);
+
+    if (template) {
+      setDraft(template.question);
+    }
+  }
+
   function handleNewConversation() {
     if (streaming) return;
 
     setMessages([]);
     setDraft("");
+    setMode("chat");
+    setTemplateId("");
+    setCode("");
+    setLanguage("");
+    setErrorMessage("");
     setCopyState(null);
     textareaRef.current?.focus();
   }
@@ -279,7 +347,10 @@ export function LocalAiChat({
   const composerDisabled =
     Boolean(unavailableReason) || !endpoint || !model;
   const canSend =
-    !composerDisabled && !streaming && draft.trim().length > 0;
+    !composerDisabled &&
+    !streaming &&
+    question.length > 0 &&
+    !contextError;
 
   return (
     <Card className="flex flex-col gap-4 p-5">
@@ -290,11 +361,11 @@ export function LocalAiChat({
           </div>
           <div>
             <h2 className="text-base font-semibold tracking-tight text-ink">
-              Chat
+              Chat and code assistance
             </h2>
             <p className="mt-1 text-sm leading-6 text-muted">
-              Messages stay in this tab and are sent only to the selected
-              loopback model.
+              Messages, code, and errors stay in this tab and are sent only
+              to the selected loopback model.
             </p>
           </div>
         </div>
@@ -328,11 +399,11 @@ export function LocalAiChat({
               <p className="text-sm font-medium text-ink">
                 {unavailableReason
                   ? "Local chat is not ready"
-                  : "Start a local conversation"}
+                  : "Start a local developer session"}
               </p>
               <p className="mt-1 max-w-sm text-xs leading-5 text-muted">
                 {unavailableReason ??
-                  "Ollama must be running on this machine. Your prompt and the model response are never saved."}
+                  "Ollama must be running on this machine. Ask a question or explicitly attach code and error output. Nothing is saved."}
               </p>
             </div>
           </div>
@@ -437,6 +508,21 @@ export function LocalAiChat({
         </p>
       )}
 
+      <LocalAiAssistFields
+        mode={mode}
+        onModeChange={handleModeChange}
+        templateId={templateId}
+        onTemplateChange={handleTemplateChange}
+        code={code}
+        onCodeChange={setCode}
+        language={language}
+        onLanguageChange={setLanguage}
+        errorMessage={errorMessage}
+        onErrorMessageChange={setErrorMessage}
+        disabled={streaming}
+        hint={contextError}
+      />
+
       <form
         className="flex flex-col gap-2"
         onSubmit={(event) => {
@@ -456,7 +542,10 @@ export function LocalAiChat({
           onKeyDown={handleComposerKeyDown}
           disabled={composerDisabled}
           aria-describedby="ollama-chat-help"
-          placeholder="Ask the selected local model…"
+          placeholder={
+            modeDefinition?.composerPlaceholder ??
+            "Ask the selected local model…"
+          }
           className={cn(
             "lens-scrollbar w-full resize-none rounded-xl border border-line bg-base/70 px-3 py-2.5 text-sm leading-6 text-ink placeholder:text-faint focus:outline-none",
             "focus:border-accent/50 focus:ring-1 focus:ring-accent/30",
@@ -468,7 +557,8 @@ export function LocalAiChat({
             id="ollama-chat-help"
             className="text-[11px] leading-5 text-faint"
           >
-            Enter sends · Shift+Enter adds a line. Nothing is saved.
+            Enter sends · Shift+Enter adds a line. Prompts and context are
+            never saved.
           </p>
           {streaming ? (
             <Button variant="secondary" onClick={handleStop}>

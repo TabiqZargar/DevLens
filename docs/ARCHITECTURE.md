@@ -147,7 +147,7 @@ explicit state. Response text is rendered as text, never as trusted markup.
 
 ### Local AI Assistant
 
-`src/features/ai` owns Stage 2A/2B. `ollama.ts` is a pure loopback contract: it
+`src/features/ai` owns Stage 2A/2B/2C. `ollama.ts` is a pure loopback contract: it
 validates an HTTP(S) base URL, accepts only `localhost`, `127.0.0.1`, or
 `[::1]` hosts, rejects credentials, paths, queries, and fragments, and parses
 `/api/tags` responses into installed-model metadata. The parser accepts an
@@ -156,9 +156,14 @@ stateful NDJSON parser that tolerates arbitrary chunk boundaries, CRLF, blank
 lines, and malformed lines carrying valid data, and reports Ollama error events
 without surfacing raw payloads. `markdown.ts` parses the supported Markdown
 subset, while `markdown-message.tsx` renders it as React nodes with code-copy
-actions and never injects HTML. `provider.ts` defines the `LocalAiProvider`
-seam for connection and chat so another local backend can be added without
-rewriting the UI.
+actions and never injects HTML. `assist.ts` is the pure developer-assistance
+contract: it defines Chat, Explain, Review, and Debug modes, mode-specific
+prompt templates, default question resolution, context validation, language-label
+sanitization, fence-safe code blocks, and the constrained system prompt that
+marks supplied code and errors as untrusted data. `LocalAiAssistFields` renders
+the mode, template, code, language, and error controls. `provider.ts` defines the
+`LocalAiProvider` seam for connection and chat so another local backend can be
+added without rewriting the UI.
 
 `src/services/local-ai.ts` implements that seam with a small `fetch` client and
 injectable dependencies. The workspace screen and `LocalAiChat` perform requests
@@ -171,19 +176,25 @@ redirects. Connection reads `GET /api/tags` with a 5 s `AbortController` timeout
 and a 1 MiB metadata cap. Chat posts to `/api/chat` with `stream: true`, decodes
 UTF-8 incrementally, parses NDJSON through `chat.ts`, posts no credentials, uses
 a 120 s inactivity timeout, caps the response at 2 MiB, and supports
-`AbortController` cancellation. Failures use fixed error codes; raw errors and
-response bodies are not surfaced, and partial assistant output is preserved on
-errors or cancellation.
+`AbortController` cancellation. The provider accepts validated `system` messages
+so task modes can send one explicit developer-context message ahead of the
+in-memory conversation. Failures use fixed error codes; raw errors and response
+bodies are not surfaced, and partial assistant output is preserved on errors or
+cancellation.
 
 The screen stores only the normalized endpoint and selected model in the
 existing settings record. Connection status, discovered models, model metadata,
-and the chat transcript are transient component state. A saved model that is
-absent from the current endpoint is shown as a warning rather than silently
-replaced; no model is assumed before the user selects one. Prompt, response, or
-conversation history is never persisted, and page, network, or API data is
-never attached to a chat automatically. The local-only boundary note documents
-that Ollama may need `OLLAMA_ORIGINS` set for the extension origin; the UI does
-not imply that loopback connectivity is automatic.
+the chat transcript, task mode, prompt template, and explicitly entered code,
+language, and error text are transient component state. Explain and Review
+require code; Debug accepts code, error output, or both. Only those explicit
+fields are attached, through one system message, when the user sends. A saved
+model that is absent from the current endpoint is shown as a warning rather than
+silently replaced; no model is assumed before the user selects one. Prompt,
+response, code, error, or conversation history is never persisted, and page,
+network, or API data is never attached to a chat automatically. The local-only
+boundary note documents that Ollama may need `OLLAMA_ORIGINS` set for the
+extension origin; the UI does not imply that loopback connectivity is
+automatic.
 
 ### DevTools
 
@@ -346,12 +357,13 @@ Vitest runs two projects:
 
 - `node` for pure logic (`src/shared`, `src/background`, `json-core`,
   `jwt-core`, `jwt-claims`, `api-request`, `api-execution`, `api-response`,
-  settings, Ollama endpoint/model parsing, chat NDJSON parsing, Markdown parsing,
-  and the provider, manifest contract)
+  settings, Ollama endpoint/model parsing, developer-assistance modes and
+  context, chat NDJSON parsing, Markdown parsing, and the provider, manifest
+  contract)
 - `dom` with jsdom for components, storage, the JSON tree/editor, JWT, API
   Builder screens including Send, permission, response, and cancellation
-  states, Local AI connection/model states, chat streaming, and Markdown/code
-  rendering
+  states, Local AI connection/model states, chat streaming, explicit code/error
+  context, and Markdown/code rendering
 
 `src/test/setup.ts` installs jest-dom matchers and RTL cleanup. Tests mock
 `chrome` with `vi.stubGlobal`. CodeMirror renders under jsdom; editor
@@ -380,6 +392,10 @@ that do not exist until `npm run build`.
 - **No Markdown dependency or HTML injection.** Chat Markdown is parsed into
   React nodes by a small local parser, keeping the CSP-safe renderer and the
   dependency surface minimal.
+- **Explicit, constrained developer context.** Local AI task modes attach only
+  code and errors entered by the user, in one system message that marks them as
+  untrusted data. There is no file access, page scraping, retrieval, or automatic
+  DevLens payload attachment.
 - **Static manifest, no manifest plugin.** It is small and verifier-checked.
 - **Deferred content-script registration.** Keeps the install prompt honest.
 

@@ -332,6 +332,44 @@ describe("createOllamaProvider", () => {
     );
   });
 
+  it("forwards an explicit system context message", async () => {
+    const fetchMock = vi.fn(async () =>
+      chatResponse([
+        chatLine({
+          message: { role: "assistant", content: "Reviewed" },
+          done: false,
+        }),
+        chatLine({ message: {}, done: true }),
+      ]),
+    );
+    const provider = chatProvider(fetchMock);
+    const messages = [
+      {
+        role: "system" as const,
+        content: "Use only the supplied code.",
+      },
+      { role: "user" as const, content: "Review this code." },
+    ];
+
+    await expect(
+      provider.chat({
+        endpoint: ENDPOINT,
+        model: "llama3.2",
+        messages,
+      }),
+    ).resolves.toMatchObject({ ok: true, content: "Reviewed" });
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${ENDPOINT}/api/chat`,
+      expect.objectContaining({
+        body: JSON.stringify({
+          model: "llama3.2",
+          messages,
+          stream: true,
+        }),
+      }),
+    );
+  });
+
   it("decodes a UTF-8 sequence split across stream chunks", async () => {
     const source = new TextEncoder().encode(
       chatLine({

@@ -118,6 +118,15 @@ semantic versioning.
   actions, without injected HTML or a Markdown dependency.
 - Chat NDJSON parser, provider streaming, Markdown, composer, cancellation,
   permission, partial-output, and safe-rendering tests.
+- Local AI Assistant Stage 2C with Chat, Explain code, Review code, and Debug
+  modes, developer prompt templates, and explicitly entered code, language, and
+  error context.
+- Constrained system context for task modes that treats supplied code and errors
+  as untrusted data, accepts error-only debug requests, and is sent only when
+  the user presses Send.
+- Provider `system` role support, mode/context validation, and prompt-building
+  tests without adding a cloud provider, persistence, retrieval, or automatic
+  page/network/API attachment.
 
 ### Changed
 
@@ -133,7 +142,7 @@ semantic versioning.
 - Added minimal CodeMirror 6 dependencies and `worker.format: "es"` to Vite.
 - Updated module metadata and documentation for JSON Studio, JWT Inspector, API
   Builder through Stage 3B-3, Network Inspector through Stage 1C, and Local AI
-  Stage 2A/2B.
+  Stage 2A/2B/2C.
 
 ### Notes
 
@@ -155,14 +164,16 @@ semantic versioning.
   shown explicitly. Chrome may still materialize the full body internally when
   `getContent()` runs. Snapshot entries from `getHAR()` do not expose body
   accessors.
-- Local AI Stage 2A/2B stores only the normalized Ollama endpoint and selected
-  model. Prompts, responses, model metadata, connection status, and conversation
-  messages stay in memory and are discarded by New chat, route changes, or
-  reload. The screen fetches only `GET /api/tags` and `POST /api/chat` from a
-  validated loopback endpoint after the user checks the connection or sends a
-  message and grants optional origin access; Ollama may still require
-  `OLLAMA_ORIGINS` for the extension origin. Payload context and saved or
-  cross-session history are not implemented in this stage.
+- Local AI Stage 2A/2B/2C stores only the normalized Ollama endpoint and
+  selected model. Prompts, responses, model metadata, connection status,
+  conversation messages, and explicitly entered code or errors stay in memory
+  and are discarded by New chat, route changes, or reload. The screen fetches
+  only `GET /api/tags` and `POST /api/chat` from a validated loopback endpoint
+  after the user checks the connection or sends a message and grants optional
+  origin access; Ollama may still require `OLLAMA_ORIGINS` for the extension
+  origin. Only explicitly entered code and errors are attached to task modes;
+  automatic payload context, saved history, and cross-session conversations are
+  not implemented.
 - Copy as cURL and HAR export are explicit user actions. Copied commands may
   contain credentials or sensitive headers, and exported HAR files include
   loaded response bodies; both stay in memory and are never persisted or
