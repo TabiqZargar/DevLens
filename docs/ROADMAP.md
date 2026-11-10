@@ -339,6 +339,27 @@ runs only on the active tab after Inspect; collections are bounded; snapshots
 are never persisted or transmitted; permissions are documented here and in the
 manifest.
 
+## Milestone 6 — Final integration and UI refinement (implemented)
+
+Shipped:
+
+- Audit of all six module screens, the popup, workspace shell, and DevTools
+  panel for stale copy, inconsistent widths, duplicated UI, and accessibility
+  gaps.
+- Shared `Notice`, `Tabs`, `Spinner`, and field-style primitives, with duplicate
+  module-local status, clipboard, spinner, and input code removed.
+- Compact shell and visual pass: skip link, focusable main scroll container,
+  corrected module metadata, accurate Network Inspector workspace landing page,
+  restrained typography/shadows, and consistent `max-w-7xl` content widths.
+- Keyboard-navigable tabs, labelled tab panels, visible JWT copy labels, and
+  stronger JSON/JWT focus states.
+- Local AI chat scroll-follow only when the reader is near the bottom, plus
+  clipboard cleanup on failure.
+
+Acceptance: all module behavior and privacy boundaries are unchanged; focused
+tests, the full suite, typecheck, build, and artifact verification pass. Manual
+Chrome/Edge/Brave smoke testing remains a release task.
+
 ## Hardening and release
 
 - Cross-browser smoke tests in Chrome, Edge, and Brave.

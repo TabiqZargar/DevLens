@@ -9,6 +9,8 @@ import {
   LockIcon,
   PageHeader,
   ScanIcon,
+  Spinner,
+  Tabs,
 } from "../../components";
 import { inspectPageTab } from "../../services/page-inspection";
 import { getModuleDefinition } from "../../shared/modules";
@@ -78,15 +80,6 @@ function tabCount(
     case "accessibility":
       return result.accessibility.findings.length;
   }
-}
-
-function Spinner() {
-  return (
-    <span
-      aria-hidden="true"
-      className="size-3.5 animate-spin rounded-full border-2 border-current border-r-transparent"
-    />
-  );
 }
 
 function formatDate(value: string): string {
@@ -676,7 +669,7 @@ export function PageInspectorScreen() {
   const loading = state.status === "loading";
 
   return (
-    <section className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+    <section className="mx-auto flex w-full max-w-7xl flex-col gap-6">
       <PageHeader
         eyebrow={module.milestone}
         title={module.name}
@@ -797,42 +790,35 @@ export function PageInspectorScreen() {
 
       {ready ? (
         <Card className="p-4">
-          <div
-            role="tablist"
-            aria-label="Page inspection sections"
-            className="lens-scrollbar flex gap-1 overflow-x-auto border-b border-line pb-2"
-          >
-            {TABS.map((item) => {
+          <Tabs
+            items={TABS.map((item) => {
               const count = tabCount(item.id, state.result);
 
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={tab === item.id}
-                  aria-controls="page-inspection-panel"
-                  onClick={() => setTab(item.id)}
-                  className={cn(
-                    "flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition",
-                    tab === item.id
-                      ? "bg-accent/15 text-ink ring-1 ring-inset ring-accent/25"
-                      : "text-faint hover:text-muted",
-                  )}
-                >
-                  {item.label}
-                  {count !== null && (
-                    <span className="font-mono text-[10px] text-faint">
-                      {count}
-                    </span>
-                  )}
-                </button>
-              );
+              return {
+                id: item.id,
+                label: (
+                  <>
+                    {item.label}
+                    {count !== null && (
+                      <span className="ml-1.5 font-mono text-[10px] text-faint">
+                        {count}
+                      </span>
+                    )}
+                  </>
+                ),
+              };
             })}
-          </div>
+            value={tab}
+            onChange={setTab}
+            label="Page inspection sections"
+            idPrefix="page-inspection-tab"
+            panelId="page-inspection-panel"
+            className="lens-scrollbar overflow-x-auto border-b border-line pb-2"
+          />
           <div
             role="tabpanel"
             id="page-inspection-panel"
+            aria-labelledby={`page-inspection-tab-${tab}`}
             className="pt-4"
           >
             <InspectionPanel tab={tab} result={state.result} />

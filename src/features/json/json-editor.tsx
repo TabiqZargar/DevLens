@@ -63,7 +63,7 @@ const EDITOR_THEME = EditorView.theme(
     },
     "&.cm-focused": {
       outline: "none",
-      boxShadow: "inset 0 0 0 1px rgba(139, 124, 255, 0.35)",
+      boxShadow: "inset 0 0 0 2px rgba(139, 124, 255, 0.55)",
     },
     ".cm-scroller": {
       fontFamily: "var(--font-mono)",

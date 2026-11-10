@@ -220,14 +220,14 @@ describe("JwtInspectorScreen", () => {
     await waitFor(() => {
       expect(
         screen.getByRole("button", {
-          name: "Copy decoded header",
+          name: "Copy header",
         }),
       ).toBeInTheDocument();
     });
 
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Copy decoded header",
+        name: "Copy header",
       }),
     );
 
@@ -252,7 +252,7 @@ describe("JwtInspectorScreen", () => {
     expect(screen.getByText("Empty signature segment")).toBeInTheDocument();
     expect(screen.getByText("0 bytes")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Copy JWT signature" }),
+      screen.getByRole("button", { name: "Copy signature" }),
     ).toBeDisabled();
   });
 

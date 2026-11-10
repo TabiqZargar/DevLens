@@ -158,7 +158,8 @@ Implemented:
   inspection collections, and form metadata from labels and attributes only
 - Typed background messaging, page-metadata, and page-inspection contracts
 - Storage wrapper with a dev fallback outside extensions
-- Premium dark design system, responsive layout, and inline icon set
+- Compact dark design system with responsive layout, shared notices/tabs/fields,
+  keyboard-accessible navigation, and inline icons
 - Tests plus a post-build artifact verifier
 
 Not implemented yet:

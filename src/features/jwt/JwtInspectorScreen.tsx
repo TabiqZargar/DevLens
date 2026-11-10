@@ -1,21 +1,19 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import {
-  AlertIcon,
   Badge,
-  BracesIcon,
   Button,
   Card,
-  CheckIcon,
-  cn,
   CopyIcon,
   EmptyState,
   KeyIcon,
   Kbd,
   LockIcon,
+  Notice,
   PageHeader,
   ScanIcon,
   TrashIcon,
 } from "../../components";
+import { copyTextToClipboard } from "../../services/clipboard";
 import { getModuleDefinition } from "../../shared/modules";
 import { JsonCodeEditor } from "../json/json-editor";
 import {
@@ -32,20 +30,6 @@ import {
 } from "./jwt-claims";
 
 const module = getModuleDefinition("jwt");
-
-const NOTICE_STYLES = {
-  success: "border-success/25 bg-success/[0.06]",
-  info: "border-accent/25 bg-accent/[0.06]",
-  warning: "border-warning/25 bg-warning/[0.06]",
-  error: "border-danger/25 bg-danger/[0.06]",
-} as const;
-
-const NOTICE_ICON_STYLES = {
-  success: "text-success",
-  info: "text-accent-strong",
-  warning: "text-warning",
-  error: "text-danger",
-} as const;
 
 const CLAIM_LABELS: Record<RegisteredClaimName, string> = {
   exp: "Expiration time",
@@ -78,32 +62,6 @@ type Notice = {
   message: string;
 };
 
-async function copyToClipboard(text: string): Promise<boolean> {
-  try {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(text);
-      return true;
-    }
-  } catch {
-    // Fall back to the legacy copy path below.
-  }
-
-  try {
-    const textarea = document.createElement("textarea");
-    textarea.value = text;
-    textarea.setAttribute("readonly", "");
-    textarea.style.position = "fixed";
-    textarea.style.opacity = "0";
-    document.body.appendChild(textarea);
-    textarea.select();
-    const copied = document.execCommand("copy");
-    textarea.remove();
-    return copied;
-  } catch {
-    return false;
-  }
-}
-
 function prettyJson(value: JwtJsonObject): string {
   return JSON.stringify(value, null, 2);
 }
@@ -119,33 +77,6 @@ function claimBadgeVariant(status: ClaimStatus) {
     return "warning" as const;
   }
   return "outline" as const;
-}
-
-function NoticeBanner({ notice }: { notice: Notice }) {
-  const Icon =
-    notice.kind === "success"
-      ? CheckIcon
-      : notice.kind === "info"
-        ? BracesIcon
-        : AlertIcon;
-
-  return (
-    <div
-      role={notice.kind === "error" ? "alert" : "status"}
-      className={cn(
-        "flex items-start gap-3 rounded-xl border px-4 py-3",
-        NOTICE_STYLES[notice.kind],
-      )}
-    >
-      <Icon
-        className={cn(
-          "mt-0.5 size-4 shrink-0",
-          NOTICE_ICON_STYLES[notice.kind],
-        )}
-      />
-      <p className="text-sm font-medium text-ink">{notice.message}</p>
-    </div>
-  );
 }
 
 function ClaimRow({ claim }: { claim: ClaimInsight }) {
@@ -181,7 +112,13 @@ function ClaimRow({ claim }: { claim: ClaimInsight }) {
   );
 }
 
-function DecodedHeader({ decoded }: { decoded: DecodedJwt }) {
+function DecodedHeader({
+  decoded,
+  action,
+}: {
+  decoded: DecodedJwt;
+  action?: ReactNode;
+}) {
   const algorithm =
     typeof decoded.header.alg === "string" ? decoded.header.alg : null;
   const type = typeof decoded.header.typ === "string" ? decoded.header.typ : null;
@@ -191,6 +128,7 @@ function DecodedHeader({ decoded }: { decoded: DecodedJwt }) {
       <h2 className="text-sm font-semibold text-ink">Header</h2>
       {algorithm && <Badge variant="accent">{algorithm}</Badge>}
       {type && <Badge variant="outline">{type}</Badge>}
+      {action && <div className="ml-auto">{action}</div>}
     </div>
   );
 }
@@ -287,7 +225,7 @@ export function JwtInspectorScreen() {
     if (copyTarget) return;
 
     setCopyTarget(label);
-    const copied = await copyToClipboard(text);
+    const copied = await copyTextToClipboard(text);
     setCopyTarget(null);
 
     if (copied) {
@@ -309,7 +247,7 @@ export function JwtInspectorScreen() {
     : "";
 
   return (
-    <section className="mx-auto flex w-full max-w-[90rem] flex-col gap-6">
+    <section className="mx-auto flex w-full max-w-7xl flex-col gap-6">
       <PageHeader
         eyebrow={module.milestone}
         title={module.name}
@@ -352,7 +290,7 @@ export function JwtInspectorScreen() {
           </span>
         </div>
 
-        <div className="focus-within:ring-1 focus-within:ring-inset focus-within:ring-accent/30">
+        <div>
           <label htmlFor="jwt-token" className="sr-only">
             JWT token
           </label>
@@ -375,7 +313,7 @@ export function JwtInspectorScreen() {
             autoCapitalize="off"
             autoCorrect="off"
             placeholder="Paste a compact JWT: header.payload.signature"
-            className="h-40 w-full resize-y bg-transparent px-4 py-3 font-mono text-[12.5px] leading-6 text-ink placeholder:text-faint focus:outline-none"
+            className="h-40 w-full resize-y bg-transparent px-4 py-3 font-mono text-[12.5px] leading-6 text-ink placeholder:text-faint focus-visible:outline-offset-[-2px]"
           />
         </div>
 
@@ -409,42 +347,39 @@ export function JwtInspectorScreen() {
         </div>
       </Card>
 
-      {notice && <NoticeBanner notice={notice} />}
+      {notice && (
+        <Notice kind={notice.kind} message={notice.message} />
+      )}
 
       {decodedState ? (
         <>
           {stale && (
-            <div
-              role="status"
-              className="flex items-start gap-3 rounded-xl border border-warning/25 bg-warning/[0.06] px-4 py-3"
-            >
-              <AlertIcon className="mt-0.5 size-4 shrink-0 text-warning" />
-              <p className="text-sm text-ink">
-                The token changed after this decode. Decode again to
-                refresh the results.
-              </p>
-            </div>
+            <Notice
+              kind="warning"
+              message="The token changed after this decode. Decode again to refresh the results."
+            />
           )}
 
           <div className="grid min-w-0 gap-4 xl:grid-cols-2">
             <Card className="flex min-w-0 flex-col overflow-hidden">
-              <DecodedHeader decoded={decodedState.decoded} />
-              <div className="flex items-center justify-end border-b border-line px-4 py-2">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  aria-label="Copy decoded header"
-                  onClick={() =>
-                    void handleCopy(headerJson, "decoded header")
-                  }
-                  disabled={copyTarget !== null}
-                >
-                  <CopyIcon className="size-3.5" />
-                  {copyTarget === "decoded header"
-                    ? "Copying…"
-                    : "Copy header"}
-                </Button>
-              </div>
+              <DecodedHeader
+                decoded={decodedState.decoded}
+                action={
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() =>
+                      void handleCopy(headerJson, "decoded header")
+                    }
+                    disabled={copyTarget !== null}
+                  >
+                    <CopyIcon className="size-3.5" />
+                    {copyTarget === "decoded header"
+                      ? "Copying…"
+                      : "Copy header"}
+                  </Button>
+                }
+              />
               <div className="h-[clamp(14rem,28vh,24rem)] min-h-0">
                 <JsonCodeEditor label="Decoded JWT header" value={headerJson} readOnly />
               </div>
@@ -458,12 +393,10 @@ export function JwtInspectorScreen() {
                 <Badge variant="outline">
                   {Object.keys(decodedState.decoded.payload).length} keys
                 </Badge>
-              </div>
-              <div className="flex items-center justify-end border-b border-line px-4 py-2">
                 <Button
                   size="sm"
                   variant="ghost"
-                  aria-label="Copy decoded payload"
+                  className="ml-auto"
                   onClick={() =>
                     void handleCopy(payloadJson, "decoded payload")
                   }
@@ -491,23 +424,10 @@ export function JwtInspectorScreen() {
                 <Badge variant="outline">
                   {decodedState.decoded.signatureBytes} bytes
                 </Badge>
-              </div>
-              <div className="min-w-0 flex-1 space-y-3 p-4">
-                <code className="block break-all font-mono text-xs leading-6 text-muted">
-                  {decodedState.decoded.signature ||
-                    "Empty signature segment"}
-                </code>
-                <p className="text-[11px] leading-5 text-faint">
-                  This is the signature segment as written in the token.
-                  DevLens does not verify it, and an empty segment is not
-                  proof that the token is unsigned or valid.
-                </p>
-              </div>
-              <div className="flex justify-end border-t border-line px-4 py-2">
                 <Button
                   size="sm"
                   variant="ghost"
-                  aria-label="Copy JWT signature"
+                  className="ml-auto"
                   onClick={() =>
                     void handleCopy(
                       decodedState.decoded.signature,
@@ -524,6 +444,17 @@ export function JwtInspectorScreen() {
                     ? "Copying…"
                     : "Copy signature"}
                 </Button>
+              </div>
+              <div className="min-w-0 flex-1 space-y-3 p-4">
+                <code className="block break-all font-mono text-xs leading-6 text-muted">
+                  {decodedState.decoded.signature ||
+                    "Empty signature segment"}
+                </code>
+                <p className="text-[11px] leading-5 text-faint">
+                  This is the signature segment as written in the token.
+                  DevLens does not verify it, and an empty segment is not
+                  proof that the token is unsigned or valid.
+                </p>
               </div>
             </Card>
 

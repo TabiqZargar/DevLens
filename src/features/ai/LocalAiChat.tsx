@@ -12,6 +12,7 @@ import {
   CheckIcon,
   cn,
   CopyIcon,
+  FORM_FIELD_CLASS,
   PlusIcon,
   SendIcon,
   SparklesIcon,
@@ -76,6 +77,7 @@ export function LocalAiChat({
   const controllerRef = useRef<AbortController | null>(null);
   const mountedRef = useRef(true);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const followOutputRef = useRef(true);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
@@ -96,10 +98,20 @@ export function LocalAiChat({
   useEffect(() => {
     const element = scrollRef.current;
 
-    if (element) {
+    if (element && followOutputRef.current) {
       element.scrollTop = element.scrollHeight;
     }
   }, [messages]);
+
+  function handleTranscriptScroll() {
+    const element = scrollRef.current;
+
+    if (!element) return;
+
+    followOutputRef.current =
+      element.scrollHeight - element.scrollTop - element.clientHeight <
+      48;
+  }
 
   const templates = promptTemplatesFor(mode);
   const selectedTemplate =
@@ -185,6 +197,7 @@ export function LocalAiChat({
     const controller = new AbortController();
 
     controllerRef.current = controller;
+    followOutputRef.current = true;
     setMessages((current) => [
       ...current,
       userMessage,
@@ -312,6 +325,7 @@ export function LocalAiChat({
   function handleNewConversation() {
     if (streaming) return;
 
+    followOutputRef.current = true;
     setMessages([]);
     setDraft("");
     setMode("chat");
@@ -388,6 +402,7 @@ export function LocalAiChat({
         role="log"
         aria-label="Local AI conversation"
         aria-live="off"
+        onScroll={handleTranscriptScroll}
         className="lens-scrollbar flex min-h-[18rem] max-h-[30rem] flex-col gap-5 overflow-y-auto rounded-xl border border-line bg-base/40 p-4"
       >
         {messages.length === 0 ? (
@@ -547,9 +562,8 @@ export function LocalAiChat({
             "Ask the selected local model…"
           }
           className={cn(
-            "lens-scrollbar w-full resize-none rounded-xl border border-line bg-base/70 px-3 py-2.5 text-sm leading-6 text-ink placeholder:text-faint focus:outline-none",
-            "focus:border-accent/50 focus:ring-1 focus:ring-accent/30",
-            "disabled:cursor-not-allowed disabled:opacity-60",
+            FORM_FIELD_CLASS,
+            "lens-scrollbar resize-none",
           )}
         />
         <div className="flex flex-wrap items-center justify-between gap-2">

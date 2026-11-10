@@ -22,8 +22,9 @@ function NavLink({
     <a
       href={`#/${module.id}`}
       aria-current={active ? "page" : undefined}
+      title={module.tagline}
       className={cn(
-        "group flex items-center gap-3 rounded-xl px-2.5 py-2.5 text-sm transition",
+        "group flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition",
         active
           ? "bg-accent/10 text-ink ring-1 ring-inset ring-accent/25"
           : "text-muted hover:bg-white/[0.04] hover:text-ink",
@@ -31,7 +32,7 @@ function NavLink({
     >
       <span
         className={cn(
-          "grid size-8 shrink-0 place-items-center rounded-lg border transition",
+          "grid size-7 shrink-0 place-items-center rounded-md border transition",
           active
             ? "border-accent/30 bg-accent/15 text-accent-strong"
             : "border-line bg-surface text-faint group-hover:text-muted",
@@ -67,9 +68,15 @@ export function AppShell({
 
   return (
     <div className="flex min-h-screen bg-canvas text-ink">
+      <a
+        href="#workspace-main"
+        className="sr-only z-50 rounded-lg bg-accent px-3 py-2 text-sm font-medium text-[#080910] focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
+      >
+        Skip to content
+      </a>
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-line bg-base/90 p-5 md:flex">
         <Brand />
-        <div className="mt-8 px-2 text-[10px] font-medium uppercase tracking-[0.22em] text-faint">
+        <div className="mt-7 px-2 text-[10px] font-medium uppercase tracking-[0.2em] text-faint">
           Modules
         </div>
         <nav aria-label="Modules" className="mt-3 flex flex-1 flex-col gap-1">
@@ -81,7 +88,7 @@ export function AppShell({
             />
           ))}
         </nav>
-        <div className="rounded-xl border border-line bg-surface/60 p-3">
+        <div className="rounded-lg border border-line bg-surface/60 p-3">
           <div className="flex items-center gap-2 text-xs font-medium text-ink">
             <LockIcon className="size-3.5 text-cyan" />
             Local-first
@@ -95,7 +102,7 @@ export function AppShell({
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-20 border-b border-line bg-canvas/85 backdrop-blur">
-          <div className="flex h-16 items-center justify-between gap-4 px-5 md:px-8">
+          <div className="flex h-14 items-center justify-between gap-4 px-5 md:px-8">
             <div className="flex items-center gap-3 md:hidden">
               <Brand compact />
             </div>
@@ -122,6 +129,7 @@ export function AppShell({
                 key={module.id}
                 href={`#/${module.id}`}
                 aria-current={module.id === activeId ? "page" : undefined}
+                title={module.tagline}
                 className={cn(
                   "shrink-0 rounded-lg px-2.5 py-1.5 text-xs transition",
                   module.id === activeId
@@ -137,7 +145,9 @@ export function AppShell({
 
         <main
           ref={mainRef}
-          className="lens-grid lens-scrollbar flex-1 overflow-y-auto px-5 py-8 md:px-8 md:py-10"
+          id="workspace-main"
+          tabIndex={-1}
+          className="lens-grid lens-scrollbar flex-1 overflow-y-auto px-5 py-7 md:px-8 md:py-8"
         >
           {children}
         </main>

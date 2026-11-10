@@ -1,12 +1,12 @@
-import { Button } from "../../components";
+import {
+  Button,
+  FORM_FIELD_CLASS as FIELD_CLASS,
+} from "../../components";
 import {
   LOCAL_AI_ASSIST_MODES,
   promptTemplatesFor,
   type LocalAiAssistMode,
 } from "./assist";
-
-const FIELD_CLASS =
-  "w-full rounded-xl border border-line bg-base/70 px-3 py-2.5 text-sm leading-6 text-ink placeholder:text-faint focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/30 disabled:cursor-not-allowed disabled:opacity-60";
 
 export interface LocalAiAssistFieldsProps {
   mode: LocalAiAssistMode;

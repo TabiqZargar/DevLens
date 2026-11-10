@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "../components";
 import { MODULE_SCREENS } from "../features/registry";
-import { moduleFromHash } from "../shared/modules";
+import {
+  DEFAULT_MODULE_ID,
+  isModuleId,
+  moduleFromHash,
+} from "../shared/modules";
 
 export function WorkspaceApp() {
   const [activeId, setActiveId] = useState(() =>
@@ -9,8 +13,16 @@ export function WorkspaceApp() {
   );
 
   useEffect(() => {
-    if (!window.location.hash) {
-      window.history.replaceState(null, "", "#/json");
+    const route = window.location.hash
+      .replace(/^#\/?/, "")
+      .split(/[/?]/, 1)[0] ?? "";
+
+    if (!window.location.hash || !isModuleId(route)) {
+      window.history.replaceState(
+        null,
+        "",
+        `#/${DEFAULT_MODULE_ID}`,
+      );
     }
 
     const handleHashChange = () => {

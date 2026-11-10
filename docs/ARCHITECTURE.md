@@ -384,12 +384,20 @@ manifest and `browser.*`/promise behavior. `minimum_chrome_version` is `116`.
 Tailwind v4 is configured entirely in CSS (`src/styles/index.css`); there is no
 `tailwind.config.*`. Theme tokens are exposed through `@theme` and consumed as
 normal utilities (`bg-surface`, `text-muted`, `border-line`, `text-accent`).
-Shared primitives live in `src/components` and use the `cn` helper.
+Shared primitives live in `src/components` and use the `cn` helper. `Notice`
+owns status/error styling and roles, `Tabs` owns roving tabindex plus
+Arrow/Home/End keyboard navigation, `Spinner` owns loading indicators, and
+`field.ts` exports the common input and select classes. Keep module-specific
+layout in the feature; reuse these primitives rather than duplicating status,
+clipboard, loading, or field markup.
 
-The visual language is a premium dark surface: near-black canvas, layered
-panels, violet/cyan accents, subtle grid and radial glows, and system font
-stacks. Icons are inline SVG in `src/components/icons.tsx`. MV3 CSP forbids
-remote assets, so there are no external fonts, images, or icon libraries.
+The visual language is a compact dark developer-tool surface: near-black canvas,
+layered panels, a restrained violet accent, subtle grid and accent wash, and
+Inter/JetBrains Mono font stacks with system fallbacks. The workspace shell
+provides a skip link and a focusable `<main>` scroll container, and tab panels
+are labelled by their selected tab. Icons are inline SVG in
+`src/components/icons.tsx`. MV3 CSP forbids remote assets, so there are no
+external fonts, images, or icon libraries.
 
 ## Testing
 

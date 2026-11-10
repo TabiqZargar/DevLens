@@ -6,9 +6,12 @@ import {
   Card,
   CheckIcon,
   cn,
+  DENSE_FIELD_CLASS as FIELD_CLASS,
+  FIELD_FOCUS,
   LockIcon,
   PageHeader,
   SparklesIcon,
+  Spinner,
 } from "../../components";
 import { getModuleDefinition } from "../../shared/modules";
 import {
@@ -30,11 +33,6 @@ import type {
 
 const module = getModuleDefinition("ai");
 
-const FIELD_CLASS =
-  "h-9 rounded-lg border bg-base/70 px-3 font-mono text-xs text-ink placeholder:text-faint focus:outline-none";
-const FIELD_FOCUS =
-  "focus:border-accent/50 focus:ring-1 focus:ring-accent/30";
-
 type ConnectionState =
   | { phase: "idle" }
   | { phase: "checking" }
@@ -45,18 +43,6 @@ type ConnectionState =
       durationMs: number;
     }
   | { phase: "error"; error: LocalAiConnectionError };
-
-function Spinner({ className }: { className?: string }) {
-  return (
-    <span
-      aria-hidden="true"
-      className={cn(
-        "size-3.5 animate-spin rounded-full border-2 border-current border-r-transparent",
-        className,
-      )}
-    />
-  );
-}
 
 function formatBytes(bytes: number | undefined): string | null {
   if (bytes === undefined) return null;
@@ -393,7 +379,7 @@ export function LocalAiScreen() {
   }
 
   return (
-    <section className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+    <section className="mx-auto flex w-full max-w-7xl flex-col gap-6">
       <PageHeader
         eyebrow={module.milestone}
         title={module.name}

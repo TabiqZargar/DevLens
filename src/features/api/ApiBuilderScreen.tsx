@@ -4,11 +4,15 @@ import {
   Badge,
   Button,
   Card,
-  CheckIcon,
   cn,
+  DENSE_FIELD_CLASS as FIELD_CLASS,
   EmptyState,
+  FIELD_FOCUS,
+  Notice,
   PageHeader,
   SendIcon,
+  Spinner,
+  Tabs,
   TrashIcon,
 } from "../../components";
 import { getModuleDefinition } from "../../shared/modules";
@@ -76,12 +80,6 @@ const CONTENT_TYPE_LABELS: Record<BodyContentType, string> = {
     "Form URL encoded (application/x-www-form-urlencoded)",
 };
 
-const FIELD_CLASS =
-  "h-9 rounded-lg border bg-base/70 px-3 font-mono text-xs text-ink placeholder:text-faint focus:outline-none";
-
-const FIELD_FOCUS =
-  "focus:border-accent/50 focus:ring-1 focus:ring-accent/30";
-
 let requestSequence = 0;
 
 function createExecutionRequestId(): string {
@@ -118,18 +116,6 @@ function errorBadgeLabel(error: ApiExecutionError): string {
   }
 }
 
-function Spinner({ className }: { className?: string }) {
-  return (
-    <span
-      aria-hidden="true"
-      className={cn(
-        "size-3.5 animate-spin rounded-full border-2 border-current border-r-transparent",
-        className,
-      )}
-    />
-  );
-}
-
 function SectionEmpty({
   title,
   description,
@@ -143,32 +129,6 @@ function SectionEmpty({
       <p className="mt-1 max-w-md text-xs leading-5 text-muted">
         {description}
       </p>
-    </div>
-  );
-}
-
-function StatusNotice({ notice }: { notice: Notice }) {
-  const Icon = notice.kind === "success" ? CheckIcon : AlertIcon;
-
-  return (
-    <div
-      role="status"
-      className={cn(
-        "flex items-center gap-2 rounded-xl border px-4 py-3",
-        notice.kind === "success"
-          ? "border-accent/25 bg-accent/[0.06]"
-          : "border-warning/25 bg-warning/[0.06]",
-      )}
-    >
-      <Icon
-        className={cn(
-          "size-4 shrink-0",
-          notice.kind === "success"
-            ? "text-accent-strong"
-            : "text-warning",
-        )}
-      />
-      <p className="text-sm font-medium text-ink">{notice.message}</p>
     </div>
   );
 }
@@ -212,45 +172,37 @@ function ResponseInspector({ data }: { data: ApiResponseMetadata }) {
         <Meta label="Final URL" value={data.finalUrl} wide />
       </div>
 
-      <div
-        role="group"
-        aria-label="Response sections"
-        className="flex flex-wrap items-center gap-1 border-b border-line p-2"
-      >
-        <button
-          type="button"
-          aria-pressed={section === "body"}
-          onClick={() => setSection("body")}
-          className={cn(
-            "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition",
-            section === "body"
-              ? "bg-accent/15 text-ink ring-1 ring-inset ring-accent/25"
-              : "text-faint hover:text-muted",
-          )}
-        >
-          Body
-        </button>
-        <button
-          type="button"
-          aria-pressed={section === "headers"}
-          onClick={() => setSection("headers")}
-          className={cn(
-            "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition",
-            section === "headers"
-              ? "bg-accent/15 text-ink ring-1 ring-inset ring-accent/25"
-              : "text-faint hover:text-muted",
-          )}
-        >
-          Headers
-          <span
-            aria-hidden="true"
-            className="rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[10px] tabular-nums text-muted"
-          >
-            {data.headers.length}
-          </span>
-        </button>
-      </div>
+      <Tabs
+        items={[
+          { id: "body", label: "Body" },
+          {
+            id: "headers",
+            label: (
+              <>
+                Headers
+                <span
+                  aria-hidden="true"
+                  className="ml-1.5 rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[10px] tabular-nums text-muted"
+                >
+                  {data.headers.length}
+                </span>
+              </>
+            ),
+          },
+        ]}
+        value={section}
+        onChange={setSection}
+        label="Response sections"
+        idPrefix="api-response-tab"
+        panelId="api-response-panel"
+        className="border-b border-line p-2"
+      />
 
+      <div
+        role="tabpanel"
+        id="api-response-panel"
+        aria-labelledby={`api-response-tab-${section}`}
+      >
       {section === "body" ? (
         <div>
           <div className="flex items-center justify-between border-b border-line px-4 py-2">
@@ -313,6 +265,7 @@ function ResponseInspector({ data }: { data: ApiResponseMetadata }) {
           )}
         </div>
       )}
+      </div>
     </>
   );
 }
@@ -622,7 +575,7 @@ export function ApiBuilderScreen() {
   }
 
   return (
-    <section className="mx-auto flex w-full max-w-[90rem] flex-col gap-6">
+    <section className="mx-auto flex w-full max-w-7xl flex-col gap-6">
       <PageHeader
         eyebrow={module.milestone}
         title={module.name}
@@ -744,51 +697,43 @@ export function ApiBuilderScreen() {
         </span>
       </Card>
 
-      {notice && <StatusNotice notice={notice} />}
-
-      {cancelNotice && (
-        <StatusNotice
-          notice={{ kind: "warning", message: cancelNotice }}
-        />
+      {notice && (
+        <Notice kind={notice.kind} message={notice.message} />
       )}
 
-      <Card className="overflow-hidden">
-        <div
-          role="group"
-          aria-label="Request sections"
-          className="flex flex-wrap items-center gap-1 border-b border-line p-2"
-        >
-          {SECTIONS.map((section) => {
-            const active = activeSection === section.id;
-            const count = counts[section.id];
+      {cancelNotice && <Notice kind="warning" message={cancelNotice} />}
 
-            return (
-              <button
-                key={section.id}
-                type="button"
-                aria-pressed={active}
-                onClick={() => setActiveSection(section.id)}
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition",
-                  active
-                    ? "bg-accent/15 text-ink ring-1 ring-inset ring-accent/25"
-                    : "text-faint hover:text-muted",
-                )}
-              >
+      <Card className="overflow-hidden">
+        <Tabs
+          items={SECTIONS.map((section) => ({
+            id: section.id,
+            label: (
+              <>
                 {section.label}
-                {count > 0 && (
+                {counts[section.id] > 0 && (
                   <span
                     aria-hidden="true"
-                    className="rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[10px] tabular-nums text-muted"
+                    className="ml-1.5 rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[10px] tabular-nums text-muted"
                   >
-                    {count}
+                    {counts[section.id]}
                   </span>
                 )}
-              </button>
-            );
-          })}
-        </div>
+              </>
+            ),
+          }))}
+          value={activeSection}
+          onChange={setActiveSection}
+          label="Request sections"
+          idPrefix="api-request-tab"
+          panelId="api-request-panel"
+          className="border-b border-line p-2"
+        />
 
+        <div
+          role="tabpanel"
+          id="api-request-panel"
+          aria-labelledby={`api-request-tab-${activeSection}`}
+        >
         {activeSection === "params" && (
           <RowEditor
             title="Query parameters"
@@ -926,6 +871,7 @@ export function ApiBuilderScreen() {
             </div>
           </div>
         )}
+        </div>
       </Card>
 
       <Card className="overflow-hidden" aria-busy={sending}>

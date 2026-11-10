@@ -109,8 +109,8 @@ describe("ApiBuilderScreen", () => {
       screen.getByRole("button", { name: "Reset" }),
     ).toBeDisabled();
     expect(
-      screen.getByRole("button", { name: "Params" }),
-    ).toHaveAttribute("aria-pressed", "true");
+      screen.getByRole("tab", { name: "Params" }),
+    ).toHaveAttribute("aria-selected", "true");
     expect(
       screen.getByLabelText("Parameter key 1"),
     ).toBeInTheDocument();
@@ -170,7 +170,7 @@ describe("ApiBuilderScreen", () => {
       "devlens",
     );
     expect(
-      screen.getByRole("button", { name: "Params" }),
+      screen.getByRole("tab", { name: "Params" }),
     ).toHaveTextContent("1");
 
     const enabled = screen.getByLabelText(
@@ -209,7 +209,7 @@ describe("ApiBuilderScreen", () => {
   it("edits request headers independently of parameters", () => {
     render(<ApiBuilderScreen />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Headers" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Headers" }));
 
     expect(screen.getByLabelText("Header key 1")).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Header key 1"), {
@@ -222,7 +222,7 @@ describe("ApiBuilderScreen", () => {
     fireEvent.click(screen.getByRole("button", { name: "Add header" }));
     expect(screen.getByLabelText("Header key 2")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Headers" }),
+      screen.getByRole("tab", { name: "Headers" }),
     ).toHaveTextContent("1");
 
     fireEvent.click(
@@ -236,7 +236,7 @@ describe("ApiBuilderScreen", () => {
   it("enables the body editor only after choosing a content type", () => {
     render(<ApiBuilderScreen />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Body" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Body" }));
 
     const contentType = screen.getByLabelText(
       "Content type",
@@ -263,7 +263,7 @@ describe("ApiBuilderScreen", () => {
     });
     expect(body).toHaveValue('{"name":"Ada"}');
     expect(
-      screen.getByRole("button", { name: "Body" }),
+      screen.getByRole("tab", { name: "Body" }),
     ).toHaveTextContent("1");
 
     fireEvent.change(contentType, { target: { value: "none" } });
@@ -280,7 +280,7 @@ describe("ApiBuilderScreen", () => {
       target: { value: "q" },
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Body" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Body" }));
     fireEvent.change(screen.getByLabelText("Content type"), {
       target: { value: "text/plain" },
     });
@@ -293,8 +293,8 @@ describe("ApiBuilderScreen", () => {
     expect(methodSelect()).toHaveValue("GET");
     expect(urlInput()).toHaveValue("");
     expect(
-      screen.getByRole("button", { name: "Params" }),
-    ).toHaveAttribute("aria-pressed", "true");
+      screen.getByRole("tab", { name: "Params" }),
+    ).toHaveAttribute("aria-selected", "true");
     expect(screen.getByLabelText("Parameter key 1")).toHaveValue("");
     expect(
       screen.getByText(
@@ -302,7 +302,7 @@ describe("ApiBuilderScreen", () => {
       ),
     ).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Body" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Body" }));
     expect(screen.getByLabelText("Content type")).toHaveValue("none");
     expect(screen.getByLabelText("Request body")).toBeDisabled();
     expect(screen.getByLabelText("Request body")).toHaveValue("");
@@ -320,14 +320,14 @@ describe("ApiBuilderScreen", () => {
     fireEvent.change(screen.getByLabelText("Parameter value 1"), {
       target: { value: "2" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Headers" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Headers" }));
     fireEvent.change(screen.getByLabelText("Header key 1"), {
       target: { value: "Accept" },
     });
     fireEvent.change(screen.getByLabelText("Header value 1"), {
       target: { value: "application/json" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Body" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Body" }));
     fireEvent.change(screen.getByLabelText("Content type"), {
       target: { value: "application/json" },
     });
@@ -569,11 +569,11 @@ describe("ApiBuilderScreen", () => {
     expect(body).toHaveTextContent(/"error": "missing"/);
     expect(screen.getByText("JSON")).toBeInTheDocument();
 
-    const responseSections = screen.getByRole("group", {
+    const responseSections = screen.getByRole("tablist", {
       name: "Response sections",
     });
     fireEvent.click(
-      within(responseSections).getByRole("button", {
+      within(responseSections).getByRole("tab", {
         name: /Headers/,
       }),
     );
@@ -711,14 +711,14 @@ describe("ApiBuilderScreen", () => {
       target: { value: "q" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Add parameter" }));
-    fireEvent.click(screen.getByRole("button", { name: "Headers" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Headers" }));
     fireEvent.change(screen.getByLabelText("Header key 1"), {
       target: { value: "Authorization" },
     });
     fireEvent.change(screen.getByLabelText("Header value 1"), {
       target: { value: "Bearer secret" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Body" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Body" }));
     fireEvent.change(screen.getByLabelText("Content type"), {
       target: { value: "application/json" },
     });

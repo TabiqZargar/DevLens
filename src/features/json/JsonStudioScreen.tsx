@@ -1,6 +1,5 @@
 import { useRef, useState } from "react";
 import {
-  AlertIcon,
   Badge,
   BracesIcon,
   Button,
@@ -10,11 +9,13 @@ import {
   CopyIcon,
   EmptyState,
   MinimizeIcon,
+  Notice,
   PageHeader,
   SparklesIcon,
   SwapIcon,
   TrashIcon,
 } from "../../components";
+import { copyTextToClipboard } from "../../services/clipboard";
 import { getModuleDefinition } from "../../shared/modules";
 import {
   getJsonType,
@@ -30,27 +31,13 @@ import { processJson } from "./json-worker-client";
 
 const module = getModuleDefinition("json");
 
-const NOTICE_STYLES = {
-  success: "border-success/25 bg-success/[0.06]",
-  info: "border-accent/25 bg-accent/[0.06]",
-  warning: "border-warning/25 bg-warning/[0.06]",
-  error: "border-danger/25 bg-danger/[0.06]",
-} as const;
-
-const NOTICE_ICON_STYLES = {
-  success: "text-success",
-  info: "text-accent-strong",
-  warning: "text-warning",
-  error: "text-danger",
-} as const;
-
 interface TreeState {
   value: JsonValue;
   source: string;
   summary: JsonSummary;
 }
 
-type Notice =
+type JsonNotice =
   | { kind: "success" | "info" | "warning"; message: string }
   | {
       kind: "error";
@@ -62,89 +49,6 @@ type Notice =
     };
 
 type OutputMode = "formatted" | "minified" | "source";
-
-async function copyToClipboard(text: string): Promise<boolean> {
-  try {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(text);
-      return true;
-    }
-  } catch {
-    // Fall back to the legacy copy path below.
-  }
-
-  try {
-    const textarea = document.createElement("textarea");
-    textarea.value = text;
-    textarea.setAttribute("readonly", "");
-    textarea.style.position = "fixed";
-    textarea.style.opacity = "0";
-    document.body.appendChild(textarea);
-    textarea.select();
-    const copied = document.execCommand("copy");
-    textarea.remove();
-    return copied;
-  } catch {
-    return false;
-  }
-}
-
-function NoticeBanner({
-  notice,
-  onReveal,
-}: {
-  notice: Notice;
-  onReveal: (offset: number) => void;
-}) {
-  const Icon =
-    notice.kind === "success"
-      ? CheckIcon
-      : notice.kind === "info"
-        ? BracesIcon
-        : AlertIcon;
-
-  return (
-    <div
-      role={notice.kind === "error" ? "alert" : "status"}
-      className={cn(
-        "flex items-start gap-3 rounded-xl border px-4 py-3",
-        NOTICE_STYLES[notice.kind],
-      )}
-    >
-      <Icon
-        className={cn(
-          "mt-0.5 size-4 shrink-0",
-          NOTICE_ICON_STYLES[notice.kind],
-        )}
-      />
-      <div className="min-w-0 flex-1 space-y-1">
-        <p className="text-sm font-medium text-ink">{notice.message}</p>
-        {notice.kind === "error" && notice.line !== null && (
-          <p className="text-xs text-muted">
-            Line {notice.line}, column {notice.column}
-          </p>
-        )}
-        {notice.kind === "error" && (
-          <p
-            className="line-clamp-2 text-[11px] leading-5 text-faint"
-            title={notice.detail}
-          >
-            {notice.detail}
-          </p>
-        )}
-      </div>
-      {notice.kind === "error" && notice.offset !== null && (
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => onReveal(notice.offset ?? 0)}
-        >
-          Go to error
-        </Button>
-      )}
-    </div>
-  );
-}
 
 function IndentControl({
   indent,
@@ -192,7 +96,7 @@ export function JsonStudioScreen() {
   const [tree, setTree] = useState<TreeState | null>(null);
   const [pending, setPending] = useState<JsonAction | null>(null);
   const [copying, setCopying] = useState(false);
-  const [notice, setNotice] = useState<Notice | null>(null);
+  const [notice, setNotice] = useState<JsonNotice | null>(null);
 
   const inputEditorRef = useRef<JsonCodeEditorHandle>(null);
   const latestInputRef = useRef("");
@@ -312,7 +216,7 @@ export function JsonStudioScreen() {
     if (output.length === 0) return;
 
     setCopying(true);
-    const copied = await copyToClipboard(output);
+    const copied = await copyTextToClipboard(output);
     setCopying(false);
 
     if (copied) {
@@ -365,7 +269,7 @@ export function JsonStudioScreen() {
   }
 
   return (
-    <section className="mx-auto flex w-full max-w-[90rem] flex-col gap-6">
+    <section className="mx-auto flex w-full max-w-7xl flex-col gap-6">
       <PageHeader
         eyebrow={module.milestone}
         title={module.name}
@@ -434,10 +338,37 @@ export function JsonStudioScreen() {
       </Card>
 
       {notice && (
-        <NoticeBanner
-          notice={notice}
-          onReveal={(offset) => inputEditorRef.current?.reveal(offset)}
-        />
+        <Notice
+          kind={notice.kind}
+          message={notice.message}
+          action={
+            notice.kind === "error" && notice.offset !== null ? (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() =>
+                  inputEditorRef.current?.reveal(notice.offset ?? 0)
+                }
+              >
+                Go to error
+              </Button>
+            ) : undefined
+          }
+        >
+          {notice.kind === "error" && notice.line !== null && (
+            <p className="text-xs text-muted">
+              Line {notice.line}, column {notice.column}
+            </p>
+          )}
+          {notice.kind === "error" && (
+            <p
+              className="line-clamp-2 text-[11px] leading-5 text-faint"
+              title={notice.detail}
+            >
+              {notice.detail}
+            </p>
+          )}
+        </Notice>
       )}
 
       <div className="grid min-w-0 gap-4 xl:grid-cols-2">

@@ -15,6 +15,7 @@ import {
   CopyIcon,
   EmptyState,
   NetworkIcon,
+  Tabs,
   TrashIcon,
 } from "../../components";
 import { formatJson } from "../json/json-core";
@@ -1103,8 +1104,11 @@ function ResponseBodyPreview({
   }
 
   return (
-    <div aria-live="polite" className="space-y-1.5">
-      <div className="flex items-baseline justify-between gap-2 text-[10px] text-faint">
+    <div className="space-y-1.5">
+      <div
+        aria-live="polite"
+        className="flex items-baseline justify-between gap-2 text-[10px] text-faint"
+      >
         <span
           className="truncate font-mono"
           title={preview.mimeType || undefined}
@@ -1368,31 +1372,16 @@ function RequestDetails({
         )}
       </div>
 
-      <div
-        role="tablist"
-        aria-label="Request detail sections"
-        className="flex shrink-0 items-center gap-1 border-b border-line px-2 py-1"
-      >
-        {DETAIL_TABS.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            role="tab"
-            id={`network-detail-tab-${item.id}`}
-            aria-selected={tab === item.id}
-            aria-controls="network-detail-panel"
-            onClick={() => setTab(item.id)}
-            className={cn(
-              "rounded-md px-2 py-1 text-[10px] font-medium transition",
-              tab === item.id
-                ? "bg-accent/15 text-ink ring-1 ring-inset ring-accent/25"
-                : "text-faint hover:text-muted",
-            )}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        items={DETAIL_TABS}
+        value={tab}
+        onChange={setTab}
+        label="Request detail sections"
+        idPrefix="network-detail-tab"
+        panelId="network-detail-panel"
+        variant="compact"
+        className="shrink-0 border-b border-line px-2 py-1"
+      />
 
       <div
         role="tabpanel"

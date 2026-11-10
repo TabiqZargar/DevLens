@@ -4,6 +4,11 @@ export { Card } from "./card";
 export { cn, type ClassValue } from "./cn";
 export { EmptyState, type EmptyStateProps } from "./empty-state";
 export {
+  DENSE_FIELD_CLASS,
+  FIELD_FOCUS,
+  FORM_FIELD_CLASS,
+} from "./field";
+export {
   AlertIcon,
   ArrowRightIcon,
   BracesIcon,
@@ -31,4 +36,7 @@ export { Kbd } from "./kbd";
 export { AppShell } from "./layout/app-shell";
 export { Brand, LogoMark } from "./logo";
 export { ModuleScaffold, type ModuleScaffoldProps } from "./module-scaffold";
+export { Notice, type NoticeKind, type NoticeProps } from "./notice";
 export { PageHeader, type PageHeaderProps } from "./page-header";
+export { Spinner } from "./spinner";
+export { Tabs, type TabItem, type TabsProps } from "./tabs";

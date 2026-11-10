@@ -13,7 +13,7 @@ export interface ButtonProps
 
 const VARIANTS: Record<ButtonVariant, string> = {
   primary:
-    "bg-accent text-[#080910] shadow-[0_12px_30px_-14px_rgba(139,124,255,0.9)] hover:bg-accent-strong active:translate-y-px",
+    "bg-accent text-[#080910] hover:bg-accent-strong active:translate-y-px",
   secondary:
     "border border-line bg-raised/70 text-ink hover:border-line-strong hover:bg-raised active:translate-y-px",
   ghost: "text-muted hover:bg-white/[0.05] hover:text-ink",

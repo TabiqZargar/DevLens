@@ -25,7 +25,7 @@ const STATUS_LABELS: Record<WorkerStatus, string> = {
 };
 
 const STATUS_DOTS: Record<WorkerStatus, string> = {
-  checking: "bg-warning animate-pulse",
+  checking: "bg-warning",
   connected: "bg-success",
   offline: "bg-faint",
 };
@@ -69,7 +69,8 @@ function ModuleCard({ module }: { module: ModuleDefinition }) {
     <button
       type="button"
       onClick={() => void openWorkspace(module.id)}
-      className="group flex min-h-[96px] flex-col items-start gap-2 rounded-xl border border-line bg-surface/85 p-3 text-left transition duration-150 hover:-translate-y-0.5 hover:border-accent/40 hover:bg-raised"
+      title={module.tagline}
+      className="group flex min-h-[92px] flex-col items-start gap-2 rounded-lg border border-line bg-surface/85 p-3 text-left transition duration-150 hover:border-accent/40 hover:bg-raised"
     >
       <span className="flex w-full items-start justify-between gap-2">
         <span className="grid size-8 place-items-center rounded-lg border border-line bg-base text-accent-strong transition group-hover:border-accent/30">
@@ -106,7 +107,7 @@ export function PopupApp() {
       <div className="lens-grid flex flex-1 flex-col gap-4 px-4 py-4">
         <div className="flex items-end justify-between gap-3">
           <div>
-            <h1 className="lens-gradient-text text-lg font-semibold tracking-tight">
+            <h1 className="text-lg font-semibold tracking-tight text-ink">
               Your API workbench
             </h1>
             <p className="mt-1 text-[11px] leading-4 text-muted">
@@ -116,7 +117,7 @@ export function PopupApp() {
           <Badge variant="outline">{MODULES.length} modules</Badge>
         </div>
 
-        <div className="grid grid-cols-2 gap-2.5">
+        <div className="grid grid-cols-2 gap-2">
           {MODULES.map((module) => (
             <ModuleCard key={module.id} module={module} />
           ))}

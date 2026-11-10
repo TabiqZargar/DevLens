@@ -161,6 +161,19 @@ semantic versioning.
 - Updated module metadata and documentation for JSON Studio, JWT Inspector, API
   Builder through Stage 3B-3, Network Inspector through Stage 1C, Local AI
   Stage 2A/2B/2C, and Page Inspector.
+- Unified the workspace and popup on a compact dark developer-tool shell with a
+  skip link, corrected API Builder and Page Inspector metadata, consistent
+  content widths, restrained typography/shadows, and an accurate Network
+  Inspector workspace landing page.
+- Consolidated shared notices, tabs, loading indicators, and form-field styling,
+  removing duplicated status, clipboard, spinner, and field implementations
+  across modules.
+- Added keyboard navigation and ARIA wiring to workspace and request-detail
+  tabs, moved JWT copy actions into visible section headers, and strengthened
+  JSON and JWT focus states.
+- Local AI chat now follows streamed output only when the transcript is already
+  near the bottom, avoiding scroll jumps while earlier output is being read.
+- Clipboard writes now always release their temporary textarea on failure.
 
 ### Notes
 

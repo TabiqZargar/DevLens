@@ -44,7 +44,7 @@ export const MODULES: readonly ModuleDefinition[] = [
     name: "API Builder",
     tagline: "Compose, send, and replay requests.",
     description:
-      "Build requests with headers, auth, and bodies, then keep reusable collections in local storage.",
+      "Build requests with query parameters, headers, and bodies, then send them through the extension background.",
     milestone: "Milestone 3",
     surface: "workspace",
   },
@@ -62,7 +62,7 @@ export const MODULES: readonly ModuleDefinition[] = [
     name: "Page Inspector",
     tagline: "Understand the page behind the request.",
     description:
-      "Inspect page metadata, assets, and accessibility signals through a narrowly scoped content script.",
+      "Inspect page metadata, structure, links, images, forms, and accessibility signals after an explicit active-tab action.",
     milestone: "Milestone 5",
     surface: "workspace",
   },
