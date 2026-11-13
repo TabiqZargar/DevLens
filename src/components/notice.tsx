@@ -44,7 +44,7 @@ export function Notice({
     <div
       role={kind === "error" ? "alert" : "status"}
       className={cn(
-        "flex items-start gap-3 rounded-xl border px-4 py-3",
+        "flex items-start gap-3 rounded-md border px-3.5 py-3",
         STYLES[kind],
         className,
       )}
@@ -56,7 +56,7 @@ export function Notice({
         )}
       />
       <div className="min-w-0 flex-1 space-y-1">
-        <p className="text-sm font-medium text-ink">{message}</p>
+        <p className="text-[13px] font-medium text-ink">{message}</p>
         {children}
       </div>
       {action && <div className="shrink-0">{action}</div>}

@@ -47,14 +47,14 @@ export function PanelApp({ capture: injectedCapture }: PanelAppProps = {}) {
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-canvas">
-      <header className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-line bg-base/90 px-3">
+      <header className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-line bg-base px-3">
         <div className="flex min-w-0 items-center gap-2.5">
-          <LogoMark className="size-7 rounded-[0.55rem]" />
+          <LogoMark className="size-7" />
           <div className="min-w-0">
             <div className="truncate text-xs font-semibold text-ink">
               Network Inspector
             </div>
-            <div className="text-[9px] uppercase tracking-[0.16em] text-faint">
+            <div className="text-[9px] uppercase tracking-[0.12em] text-faint">
               DevLens
             </div>
           </div>
@@ -76,7 +76,7 @@ export function PanelApp({ capture: injectedCapture }: PanelAppProps = {}) {
         onLoadResponseContent={capture.loadResponseContent}
       />
 
-      <footer className="flex h-7 shrink-0 items-center justify-between border-t border-line bg-base/80 px-3 text-[10px] text-faint">
+      <footer className="flex h-7 shrink-0 items-center justify-between border-t border-line bg-base px-3 text-[10px] text-faint">
         <span>DevTools · DevLens Network</span>
         <span>Local-only · In-memory</span>
       </footer>

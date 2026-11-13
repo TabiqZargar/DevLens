@@ -23,8 +23,8 @@ export interface TabsProps<Id extends string> {
 
 const VARIANTS = {
   workspace:
-    "gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium",
-  compact: "gap-1 rounded-md px-2 py-1 text-[10px] font-medium",
+    "gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium",
+  compact: "gap-1 rounded px-2 py-1 text-[10px] font-medium",
 } as const;
 
 export function Tabs<Id extends string>({
@@ -101,11 +101,11 @@ export function Tabs<Id extends string>({
             onClick={() => onChange(item.id)}
             onKeyDown={(event) => handleKeyDown(event, index)}
             className={cn(
-              "inline-flex shrink-0 items-center transition",
+              "inline-flex shrink-0 items-center transition-colors",
               VARIANTS[variant],
               selected
-                ? "bg-accent/15 text-ink ring-1 ring-inset ring-accent/25"
-                : "text-faint hover:text-muted",
+                ? "bg-raised text-ink"
+                : "text-faint hover:bg-white/[0.03] hover:text-muted",
             )}
           >
             {item.label}

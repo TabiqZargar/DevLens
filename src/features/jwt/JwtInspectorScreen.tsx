@@ -247,7 +247,7 @@ export function JwtInspectorScreen() {
     : "";
 
   return (
-    <section className="mx-auto flex w-full max-w-7xl flex-col gap-6">
+    <section className="mx-auto flex w-full max-w-7xl flex-col gap-5">
       <PageHeader
         eyebrow={module.milestone}
         title={module.name}
@@ -285,7 +285,7 @@ export function JwtInspectorScreen() {
             )}
             {stale && <Badge variant="warning">Stale</Badge>}
           </div>
-          <span className="text-[10px] uppercase tracking-[0.16em] text-faint">
+          <span className="text-[10px] uppercase tracking-[0.12em] text-faint">
             Compact JWT
           </span>
         </div>

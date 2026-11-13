@@ -229,7 +229,7 @@ function NetworkToolbar({
   const totalCount = state.entries.length;
 
   return (
-    <div className="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-line bg-base/85 px-2 py-1.5">
+    <div className="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-line bg-base px-2 py-1.5">
       <span
         role="status"
         aria-live="polite"
@@ -507,7 +507,7 @@ const RequestRow = memo(function RequestRow({
       onKeyDown={handleKeyDown}
       className={cn(
         "cursor-pointer border-b border-line/60 outline-none transition-colors hover:bg-white/[0.035] focus-visible:bg-white/[0.05]",
-        selected && "bg-accent/[0.09] hover:bg-accent/[0.12]",
+        selected && "bg-accent/[0.07] hover:bg-accent/[0.1]",
       )}
     >
       <td
@@ -572,8 +572,8 @@ function RequestTable({
   return (
     <div className="lens-scrollbar min-h-0 flex-1 overflow-auto">
       <table className="w-full table-fixed border-collapse text-left">
-        <thead className="sticky top-0 z-10 bg-surface/95 backdrop-blur">
-          <tr className="border-b border-line text-[9px] uppercase tracking-[0.14em] text-faint">
+        <thead className="sticky top-0 z-10 bg-surface">
+          <tr className="border-b border-line text-[9px] uppercase tracking-[0.12em] text-faint">
             <th className="w-16 px-2 py-1.5 font-medium">Method</th>
             <th className="px-2 py-1.5 font-medium">URL</th>
             <th className="w-14 px-2 py-1.5 font-medium">Status</th>
@@ -616,7 +616,7 @@ function DetailRow({
 }) {
   return (
     <>
-      <dt className="text-[10px] uppercase tracking-[0.14em] text-faint">
+      <dt className="text-[10px] uppercase tracking-[0.12em] text-faint">
         {label}
       </dt>
       <dd
@@ -649,7 +649,7 @@ function Overview({ entry }: { entry: NetworkEntry }) {
   return (
     <div className="space-y-3">
       <div>
-        <p className="text-[10px] uppercase tracking-[0.14em] text-faint">
+        <p className="text-[10px] uppercase tracking-[0.12em] text-faint">
           URL
         </p>
         <p className="mt-0.5 break-all font-mono text-[11px] leading-5 text-ink">
@@ -770,7 +770,7 @@ function InitiatorDetails({
 
       {initiator.frames.length > 0 && (
         <div>
-          <p className="text-[10px] uppercase tracking-[0.14em] text-faint">
+          <p className="text-[10px] uppercase tracking-[0.12em] text-faint">
             Call stack
           </p>
           <ol className="mt-1 divide-y divide-line/60 overflow-hidden rounded-md border border-line/70 bg-base/30">
@@ -860,7 +860,7 @@ function DetailSection({
   return (
     <section className="space-y-1.5">
       <div className="flex items-baseline justify-between gap-2">
-        <h3 className="text-[10px] font-medium uppercase tracking-[0.14em] text-faint">
+        <h3 className="text-[10px] font-medium uppercase tracking-[0.12em] text-faint">
           {title}
         </h3>
         {meta && (
@@ -917,7 +917,7 @@ function PayloadText({
 
   return (
     <div>
-      <p className="text-[10px] uppercase tracking-[0.14em] text-faint">
+      <p className="text-[10px] uppercase tracking-[0.12em] text-faint">
         {preview.kind === "json" ? "JSON payload" : "Raw payload"}
       </p>
       <pre className="lens-scrollbar mt-1 max-h-56 overflow-auto whitespace-pre-wrap break-all rounded-md border border-line bg-base/60 p-2 font-mono text-[11px] leading-5 text-ink">
@@ -939,7 +939,7 @@ function PayloadView({ postData }: { postData: NetworkPostData | null }) {
   return (
     <div className="space-y-2">
       <div>
-        <p className="text-[10px] uppercase tracking-[0.14em] text-faint">
+        <p className="text-[10px] uppercase tracking-[0.12em] text-faint">
           Content type
         </p>
         <p className="mt-0.5 break-all font-mono text-[11px] leading-5 text-ink">
@@ -1597,7 +1597,7 @@ export function NetworkInspector({
         >
           <section
             aria-label="Requests"
-            className="flex min-h-0 flex-col overflow-hidden rounded-md border border-line bg-surface/55"
+            className="flex min-h-0 flex-col overflow-hidden rounded-md border border-line bg-surface"
           >
             {filteredEntries.length === 0 ? (
               <NetworkEmptyState
@@ -1618,7 +1618,7 @@ export function NetworkInspector({
           <section
             aria-label="Request details"
             className={cn(
-              "min-h-0 flex-col overflow-hidden rounded-md border border-line bg-surface/55",
+              "min-h-0 flex-col overflow-hidden rounded-md border border-line bg-surface",
               selectedEntry ? "flex" : "hidden lg:flex",
             )}
           >

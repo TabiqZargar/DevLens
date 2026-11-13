@@ -11,7 +11,6 @@ import {
   MinimizeIcon,
   Notice,
   PageHeader,
-  SparklesIcon,
   SwapIcon,
   TrashIcon,
 } from "../../components";
@@ -63,7 +62,7 @@ function IndentControl({
     <div
       role="group"
       aria-label="Indentation"
-      className="inline-flex rounded-lg border border-line bg-base/70 p-1"
+      className="inline-flex rounded-md border border-line bg-base p-1"
     >
       {([2, 4] as const).map((value) => (
         <button
@@ -73,9 +72,9 @@ function IndentControl({
           disabled={disabled}
           onClick={() => onChange(value)}
           className={cn(
-            "rounded-md px-2.5 py-1 text-[11px] font-medium transition disabled:opacity-50",
+            "rounded px-2.5 py-1 text-[11px] font-medium transition-colors disabled:opacity-50",
             indent === value
-              ? "bg-accent/15 text-ink ring-1 ring-inset ring-accent/25"
+              ? "bg-raised text-ink"
               : "text-faint hover:text-muted",
           )}
         >
@@ -269,7 +268,7 @@ export function JsonStudioScreen() {
   }
 
   return (
-    <section className="mx-auto flex w-full max-w-7xl flex-col gap-6">
+    <section className="mx-auto flex w-full max-w-7xl flex-col gap-5">
       <PageHeader
         eyebrow={module.milestone}
         title={module.name}
@@ -277,7 +276,7 @@ export function JsonStudioScreen() {
         actions={<Badge variant="accent">Local only</Badge>}
       />
 
-      <Card className="flex flex-wrap items-center gap-2 p-3">
+      <Card className="flex flex-wrap items-center gap-2 p-2.5">
         <IndentControl
           indent={indent}
           disabled={pendingAction}
@@ -292,7 +291,7 @@ export function JsonStudioScreen() {
           onClick={() => void runAction("format")}
           disabled={pendingAction}
         >
-          <SparklesIcon className="size-3.5" />
+          <BracesIcon className="size-3.5" />
           {pending === "format" ? "Formatting…" : "Format"}
         </Button>
         <Button
@@ -385,7 +384,7 @@ export function JsonStudioScreen() {
                 </Badge>
               )}
             </div>
-            <span className="text-[10px] uppercase tracking-[0.16em] text-faint">
+            <span className="text-[10px] uppercase tracking-[0.12em] text-faint">
               JSON
             </span>
           </div>

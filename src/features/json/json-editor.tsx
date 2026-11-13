@@ -42,16 +42,16 @@ export interface JsonCodeEditorProps {
 }
 
 const JSON_HIGHLIGHT = HighlightStyle.define([
-  { tag: tags.propertyName, color: "#a99dff" },
-  { tag: [tags.string], color: "#5eead4" },
-  { tag: [tags.number], color: "#fbbf24" },
-  { tag: [tags.bool], color: "#fb7185" },
-  { tag: [tags.null], color: "#9aa2b8" },
+  { tag: tags.propertyName, color: "#b1b0ff" },
+  { tag: [tags.string], color: "#6fd6c9" },
+  { tag: [tags.number], color: "#e2b66a" },
+  { tag: [tags.bool], color: "#e77c89" },
+  { tag: [tags.null], color: "#a3abba" },
   {
     tag: [tags.brace, tags.squareBracket, tags.punctuation, tags.separator],
-    color: "#6c7488",
+    color: "#6b7485",
   },
-  { tag: tags.invalid, color: "#fb7185" },
+  { tag: tags.invalid, color: "#e77c89" },
 ]);
 
 const EDITOR_THEME = EditorView.theme(
@@ -59,11 +59,11 @@ const EDITOR_THEME = EditorView.theme(
     "&": {
       height: "100%",
       backgroundColor: "transparent",
-      color: "#f3f4fa",
+      color: "#eef1f6",
     },
     "&.cm-focused": {
       outline: "none",
-      boxShadow: "inset 0 0 0 2px rgba(139, 124, 255, 0.55)",
+      boxShadow: "inset 0 0 0 2px rgba(139, 138, 247, 0.5)",
     },
     ".cm-scroller": {
       fontFamily: "var(--font-mono)",
@@ -73,15 +73,15 @@ const EDITOR_THEME = EditorView.theme(
     },
     ".cm-content": {
       padding: "14px 0",
-      caretColor: "#a99dff",
+      caretColor: "#b1b0ff",
       minHeight: "100%",
     },
     ".cm-line": {
       padding: "0 16px 0 8px",
     },
     ".cm-gutters": {
-      backgroundColor: "#0b0c12",
-      color: "#6c7488",
+      backgroundColor: "#0e1015",
+      color: "#6b7485",
       border: "0",
       paddingLeft: "6px",
     },
@@ -92,25 +92,25 @@ const EDITOR_THEME = EditorView.theme(
       backgroundColor: "rgba(255, 255, 255, 0.025)",
     },
     ".cm-activeLineGutter": {
-      backgroundColor: "rgba(139, 124, 255, 0.08)",
-      color: "#a99dff",
+      backgroundColor: "rgba(139, 138, 247, 0.08)",
+      color: "#b1b0ff",
     },
     ".cm-selectionBackground, &.cm-focused .cm-selectionBackground, .cm-content ::selection":
       {
-        backgroundColor: "rgba(139, 124, 255, 0.3) !important",
+        backgroundColor: "rgba(139, 138, 247, 0.26) !important",
       },
     ".cm-cursor, .cm-dropCursor": {
-      borderLeftColor: "#5eead4",
+      borderLeftColor: "#6fd6c9",
     },
     ".cm-foldPlaceholder": {
-      backgroundColor: "#181c2c",
-      border: "1px solid #232838",
-      color: "#9aa2b8",
+      backgroundColor: "#1d222c",
+      border: "1px solid #282e3a",
+      color: "#a3abba",
       borderRadius: "4px",
       padding: "0 4px",
     },
     ".cm-placeholder": {
-      color: "#6c7488",
+      color: "#6b7485",
     },
   },
   { dark: true },

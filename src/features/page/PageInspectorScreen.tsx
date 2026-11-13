@@ -107,7 +107,7 @@ function DetailRow({
 }) {
   return (
     <div className="grid gap-1 border-t border-line py-3 first:border-t-0 first:pt-0 sm:grid-cols-[140px_minmax(0,1fr)] sm:gap-4">
-      <dt className="text-[10px] font-medium uppercase tracking-[0.14em] text-faint">
+      <dt className="text-[10px] font-medium uppercase tracking-[0.12em] text-faint">
         {label}
       </dt>
       <dd
@@ -150,7 +150,7 @@ function TruncationNote({ children }: { children: ReactNode }) {
 
 function EmptySection({ children }: { children: ReactNode }) {
   return (
-    <p className="rounded-xl border border-line bg-base/40 px-4 py-3 text-sm text-muted">
+    <p className="rounded-md border border-line bg-base/40 px-3.5 py-2.5 text-[13px] text-muted">
       {children}
     </p>
   );
@@ -214,7 +214,7 @@ function StructurePanel({ result }: { result: PageInspectionResult }) {
       </div>
 
       {headings.jumps.length > 0 && (
-        <div className="rounded-xl border border-line bg-base/40 p-4">
+        <div className="rounded-md border border-line bg-base/40 p-4">
           <h3 className="text-xs font-medium text-ink">Heading level jumps</h3>
           <ul className="mt-2 space-y-1.5">
             {headings.jumps.map((jump, index) => (
@@ -237,7 +237,7 @@ function StructurePanel({ result }: { result: PageInspectionResult }) {
           {headings.items.map((heading, index) => (
             <li
               key={`${heading.level}-${index}`}
-              className="flex items-start gap-3 rounded-lg border border-line bg-base/40 px-3 py-2"
+              className="flex items-start gap-3 rounded-md border border-line bg-base/40 px-3 py-2"
             >
               <HeadingLevelBadge level={heading.level} />
               <span className="min-w-0 break-words text-sm leading-6 text-ink">
@@ -282,7 +282,7 @@ function LinksPanel({ result }: { result: PageInspectionResult }) {
           {links.items.map((link, index) => (
             <li
               key={`${link.href ?? "no-href"}-${index}`}
-              className="rounded-xl border border-line bg-base/40 p-3"
+              className="rounded-md border border-line bg-base/40 p-3"
             >
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <span
@@ -343,7 +343,7 @@ function ImagesPanel({ result }: { result: PageInspectionResult }) {
           {images.items.map((image, index) => (
             <li
               key={`${image.src}-${index}`}
-              className="rounded-xl border border-line bg-base/40 p-3"
+              className="rounded-md border border-line bg-base/40 p-3"
             >
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <p className="min-w-0 break-all font-mono text-[11px] leading-5 text-ink">
@@ -410,7 +410,7 @@ function FormsPanel({ result }: { result: PageInspectionResult }) {
           {forms.items.map((form, index) => (
             <li
               key={`${form.action}-${index}`}
-              className="rounded-xl border border-line bg-base/40 p-3"
+              className="rounded-md border border-line bg-base/40 p-3"
             >
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="accent" className="font-mono normal-case tracking-normal">
@@ -507,7 +507,7 @@ function AccessibilityPanel({ result }: { result: PageInspectionResult }) {
           {findings.map((finding, index) => (
             <li
               key={`${finding.code}-${index}`}
-              className="flex items-start gap-3 rounded-xl border border-line bg-base/40 p-3"
+              className="flex items-start gap-3 rounded-md border border-line bg-base/40 p-3"
             >
               <Badge
                 variant={findingTone(finding.severity)}
@@ -528,7 +528,7 @@ function AccessibilityPanel({ result }: { result: PageInspectionResult }) {
         </ul>
       )}
 
-      <p className="rounded-lg border border-line bg-base/40 px-3 py-2 text-xs leading-5 text-muted">
+      <p className="rounded-md border border-line bg-base/40 px-3 py-2 text-xs leading-5 text-muted">
         These are lightweight heuristic checks over the inspected sample.
         They are not a WCAG conformance audit or a substitute for manual
         accessibility testing.
@@ -562,9 +562,9 @@ function InspectionPanel({
 
 function BoundaryCard() {
   return (
-    <Card className="p-5">
+    <Card className="p-4">
       <div className="flex items-start gap-3">
-        <div className="grid size-9 shrink-0 place-items-center rounded-xl border border-line bg-raised/60 text-muted">
+        <div className="grid size-9 shrink-0 place-items-center rounded-md border border-line bg-base text-muted">
           <LockIcon className="size-4" />
         </div>
         <div>
@@ -669,7 +669,7 @@ export function PageInspectorScreen() {
   const loading = state.status === "loading";
 
   return (
-    <section className="mx-auto flex w-full max-w-7xl flex-col gap-6">
+    <section className="mx-auto flex w-full max-w-7xl flex-col gap-5">
       <PageHeader
         eyebrow={module.milestone}
         title={module.name}
@@ -680,7 +680,7 @@ export function PageInspectorScreen() {
       />
 
       {ready ? (
-        <div className="flex flex-col gap-3 rounded-2xl border border-line bg-surface/70 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 rounded-md border border-line bg-surface p-3.5 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <p className="truncate text-sm font-medium text-ink">
               {textOrFallback(state.result.overview.title, "Untitled page")}
@@ -720,7 +720,7 @@ export function PageInspectorScreen() {
           />
         </Card>
       ) : !ready ? (
-        <Card className="p-5">
+        <Card className="p-4">
           {loading ? (
             <div
               role="status"
@@ -762,7 +762,7 @@ export function PageInspectorScreen() {
           ) : (
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-start gap-3">
-                <div className="grid size-10 shrink-0 place-items-center rounded-xl border border-accent/25 bg-accent/10 text-accent-strong">
+                <div className="grid size-9 shrink-0 place-items-center rounded-md border border-line bg-base text-accent-strong">
                   <ScanIcon className="size-5" />
                 </div>
                 <div>

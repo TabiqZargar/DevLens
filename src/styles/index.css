@@ -8,22 +8,22 @@
     "JetBrains Mono", "SFMono-Regular", ui-monospace, "Cascadia Code",
     "Liberation Mono", monospace;
 
-  --color-canvas: #07070b;
-  --color-base: #0b0c12;
-  --color-surface: #0f111a;
-  --color-panel: #121522;
-  --color-raised: #181c2c;
-  --color-line: #232838;
-  --color-line-strong: #333a52;
-  --color-ink: #f3f4fa;
-  --color-muted: #9aa2b8;
-  --color-faint: #7b849c;
-  --color-accent: #8b7cff;
-  --color-accent-strong: #a99dff;
-  --color-cyan: #5eead4;
-  --color-success: #4ade80;
-  --color-warning: #fbbf24;
-  --color-danger: #fb7185;
+  --color-canvas: #0a0b0f;
+  --color-base: #0e1015;
+  --color-surface: #13161d;
+  --color-panel: #171b23;
+  --color-raised: #1d222c;
+  --color-line: #282e3a;
+  --color-line-strong: #3b4352;
+  --color-ink: #eef1f6;
+  --color-muted: #a3abba;
+  --color-faint: #778093;
+  --color-accent: #8b8af7;
+  --color-accent-strong: #b1b0ff;
+  --color-cyan: #6fd6c9;
+  --color-success: #62c98b;
+  --color-warning: #e2b66a;
+  --color-danger: #e77c89;
 }
 
 @layer base {
@@ -37,6 +37,10 @@
   body,
   #root {
     height: 100%;
+  }
+
+  html {
+    color-scheme: dark;
   }
 
   body {
@@ -69,7 +73,7 @@
   }
 
   ::selection {
-    background: rgba(139, 124, 255, 0.32);
+    background: rgba(139, 138, 247, 0.28);
     color: #ffffff;
   }
 
@@ -91,21 +95,6 @@
 }
 
 @layer components {
-  .lens-grid {
-    background-image:
-      linear-gradient(to right, rgba(255, 255, 255, 0.016) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255, 255, 255, 0.016) 1px, transparent 1px),
-      radial-gradient(
-        circle at 14% 0%,
-        rgba(139, 124, 255, 0.065),
-        transparent 34%
-      );
-    background-size:
-      32px 32px,
-      32px 32px,
-      100% 100%;
-  }
-
   .lens-scrollbar {
     scrollbar-color: var(--color-line-strong) transparent;
     scrollbar-width: thin;

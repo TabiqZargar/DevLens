@@ -24,18 +24,18 @@ function NavLink({
       aria-current={active ? "page" : undefined}
       title={module.tagline}
       className={cn(
-        "group flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition",
+        "group flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition-colors",
         active
-          ? "bg-accent/10 text-ink ring-1 ring-inset ring-accent/25"
-          : "text-muted hover:bg-white/[0.04] hover:text-ink",
+          ? "bg-raised text-ink"
+          : "text-muted hover:bg-white/[0.03] hover:text-ink",
       )}
     >
       <span
         className={cn(
-          "grid size-7 shrink-0 place-items-center rounded-md border transition",
+          "grid size-7 shrink-0 place-items-center rounded border transition-colors",
           active
-            ? "border-accent/30 bg-accent/15 text-accent-strong"
-            : "border-line bg-surface text-faint group-hover:text-muted",
+            ? "border-line-strong bg-surface text-accent-strong"
+            : "border-line bg-base text-faint group-hover:text-muted",
         )}
       >
         <ModuleIcon id={module.id} className="size-4" />
@@ -70,16 +70,16 @@ export function AppShell({
     <div className="flex min-h-screen bg-canvas text-ink">
       <a
         href="#workspace-main"
-        className="sr-only z-50 rounded-lg bg-accent px-3 py-2 text-sm font-medium text-[#080910] focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
+        className="sr-only z-50 rounded-md bg-accent px-3 py-2 text-sm font-medium text-[#0b0d12] focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
       >
         Skip to content
       </a>
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-line bg-base/90 p-5 md:flex">
+      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-line bg-base p-4 md:flex">
         <Brand />
-        <div className="mt-7 px-2 text-[10px] font-medium uppercase tracking-[0.2em] text-faint">
+        <div className="mt-6 px-2 text-[10px] font-medium uppercase tracking-[0.12em] text-faint">
           Modules
         </div>
-        <nav aria-label="Modules" className="mt-3 flex flex-1 flex-col gap-1">
+        <nav aria-label="Modules" className="mt-2 flex flex-1 flex-col gap-0.5">
           {MODULES.map((module) => (
             <NavLink
               key={module.id}
@@ -88,12 +88,12 @@ export function AppShell({
             />
           ))}
         </nav>
-        <div className="rounded-lg border border-line bg-surface/60 p-3">
+        <div className="rounded-md border border-line bg-surface p-3">
           <div className="flex items-center gap-2 text-xs font-medium text-ink">
             <LockIcon className="size-3.5 text-cyan" />
             Local-first
           </div>
-          <p className="mt-1.5 text-[11px] leading-5 text-faint">
+          <p className="mt-1 text-[11px] leading-5 text-faint">
             Data stays in this browser. AI requests go only to your Ollama
             endpoint.
           </p>
@@ -101,8 +101,8 @@ export function AppShell({
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 border-b border-line bg-canvas/85 backdrop-blur">
-          <div className="flex h-14 items-center justify-between gap-4 px-5 md:px-8">
+        <header className="sticky top-0 z-20 border-b border-line bg-canvas">
+          <div className="flex h-14 items-center justify-between gap-4 px-5 md:px-7">
             <div className="flex items-center gap-3 md:hidden">
               <Brand compact />
             </div>
@@ -122,7 +122,7 @@ export function AppShell({
           </div>
           <nav
             aria-label="Modules"
-            className="lens-scrollbar flex gap-2 overflow-x-auto border-t border-line/70 px-5 py-2 md:hidden"
+            className="lens-scrollbar flex gap-1.5 overflow-x-auto border-t border-line px-5 py-2 md:hidden"
           >
             {MODULES.map((module) => (
               <a
@@ -131,9 +131,9 @@ export function AppShell({
                 aria-current={module.id === activeId ? "page" : undefined}
                 title={module.tagline}
                 className={cn(
-                  "shrink-0 rounded-lg px-2.5 py-1.5 text-xs transition",
+                  "shrink-0 rounded-md px-2.5 py-1.5 text-xs transition-colors",
                   module.id === activeId
-                    ? "bg-accent/12 text-ink"
+                    ? "bg-raised text-ink"
                     : "text-muted hover:text-ink",
                 )}
               >
@@ -147,7 +147,7 @@ export function AppShell({
           ref={mainRef}
           id="workspace-main"
           tabIndex={-1}
-          className="lens-grid lens-scrollbar flex-1 overflow-y-auto px-5 py-7 md:px-8 md:py-8"
+          className="lens-scrollbar flex-1 overflow-y-auto bg-canvas px-5 py-6 md:px-7 md:py-7"
         >
           {children}
         </main>

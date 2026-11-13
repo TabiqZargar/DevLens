@@ -12,11 +12,11 @@ const MAX_TREE_DEPTH = 40;
 const STRING_PREVIEW_LIMIT = 110;
 
 const TYPE_STYLES: Record<JsonType, string> = {
-  object: "border-accent/25 bg-accent/10 text-accent-strong",
-  array: "border-success/25 bg-success/10 text-success",
-  string: "border-cyan/25 bg-cyan/10 text-cyan",
-  number: "border-warning/25 bg-warning/10 text-warning",
-  boolean: "border-danger/25 bg-danger/10 text-danger",
+  object: "border-accent/20 bg-accent/[0.07] text-accent-strong",
+  array: "border-success/20 bg-success/[0.07] text-success",
+  string: "border-cyan/20 bg-cyan/[0.07] text-cyan",
+  number: "border-warning/20 bg-warning/[0.07] text-warning",
+  boolean: "border-danger/20 bg-danger/[0.07] text-danger",
   null: "border-line bg-white/[0.03] text-faint",
 };
 
@@ -170,7 +170,7 @@ function JsonTreeNode({
 
             <span
               className={cn(
-                "rounded border px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-[0.12em]",
+                "rounded border px-1 py-0 text-[10px] font-medium",
                 TYPE_STYLES[type],
               )}
             >
@@ -228,7 +228,7 @@ function JsonTreeNode({
                       (current) => current + MAX_VISIBLE_CHILDREN,
                     )
                   }
-                  className="my-1 rounded-md px-2 py-1 text-[11px] text-accent-strong hover:bg-white/[0.05]"
+                  className="my-1 rounded px-2 py-1 text-[11px] text-accent-strong hover:bg-white/[0.04]"
                 >
                   Show{" "}
                   {Math.min(
@@ -257,7 +257,7 @@ export function JsonTree({ value }: { value: JsonValue }) {
     <div
       role="group"
       aria-label="JSON structure"
-      className="lens-scrollbar max-h-[30rem] overflow-auto rounded-xl border border-line bg-base/70 p-3"
+      className="lens-scrollbar max-h-[30rem] overflow-auto rounded-md border border-line bg-base/60 p-3"
     >
       <JsonTreeNode value={value} depth={0} defaultExpanded />
     </div>

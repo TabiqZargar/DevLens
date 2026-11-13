@@ -227,7 +227,7 @@ const MODULE_ICONS: Record<ModuleId, ComponentType<IconProps>> = {
   json: BracesIcon,
   jwt: KeyIcon,
   api: SendIcon,
-  ai: SparklesIcon,
+  ai: TerminalIcon,
   page: ScanIcon,
 };
 

@@ -6,17 +6,17 @@ export function LogoMark({ className }: { className?: string }) {
     <span
       aria-hidden="true"
       className={cn(
-        "relative inline-grid size-9 shrink-0 place-items-center overflow-hidden rounded-[0.7rem] bg-gradient-to-br from-accent via-[#7b8cff] to-cyan shadow-[0_10px_30px_-10px_rgba(139,124,255,0.9)]",
+        "inline-grid size-8 shrink-0 place-items-center rounded-md border border-accent/30 bg-accent/10 text-accent-strong",
         className,
       )}
     >
       <svg
         viewBox="0 0 24 24"
         fill="none"
-        stroke="#080910"
-        strokeWidth={2.1}
+        stroke="currentColor"
+        strokeWidth={2}
         strokeLinecap="round"
-        className="size-5"
+        className="size-[18px]"
       >
         <circle cx="10.5" cy="10.5" r="5.25" />
         <path d="m14.4 14.4 4.1 4.1" />
@@ -33,14 +33,14 @@ export function Brand({
   className?: string;
 }) {
   return (
-    <div className={cn("flex items-center gap-3", className)}>
+    <div className={cn("flex items-center gap-2.5", className)}>
       <LogoMark />
       <div className="min-w-0">
-        <div className="truncate text-sm font-semibold tracking-tight text-ink">
+        <div className="truncate text-[13px] font-semibold tracking-tight text-ink">
           {APP_NAME}
         </div>
         {!compact && (
-          <div className="truncate text-[11px] font-medium tracking-wide text-faint">
+          <div className="truncate text-[10px] font-medium text-faint">
             Developer toolkit
           </div>
         )}

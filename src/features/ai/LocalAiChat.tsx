@@ -15,8 +15,8 @@ import {
   FORM_FIELD_CLASS,
   PlusIcon,
   SendIcon,
-  SparklesIcon,
   StopIcon,
+  TerminalIcon,
 } from "../../components";
 import { copyTextToClipboard } from "../../services/clipboard";
 import { ollamaProvider } from "../../services/local-ai";
@@ -367,17 +367,17 @@ export function LocalAiChat({
     !contextError;
 
   return (
-    <Card className="flex flex-col gap-4 p-5">
+    <Card className="flex flex-col gap-4 p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-3">
-          <div className="grid size-10 shrink-0 place-items-center rounded-xl border border-accent/25 bg-accent/10 text-accent-strong">
-            <SparklesIcon className="size-5" />
+          <div className="grid size-9 shrink-0 place-items-center rounded-md border border-line bg-base text-muted">
+            <TerminalIcon className="size-4" />
           </div>
           <div>
-            <h2 className="text-base font-semibold tracking-tight text-ink">
+            <h2 className="text-sm font-semibold tracking-tight text-ink">
               Chat and code assistance
             </h2>
-            <p className="mt-1 text-sm leading-6 text-muted">
+            <p className="mt-1 text-[13px] leading-6 text-muted">
               Messages, code, and errors stay in this tab and are sent only
               to the selected loopback model.
             </p>
@@ -403,12 +403,12 @@ export function LocalAiChat({
         aria-label="Local AI conversation"
         aria-live="off"
         onScroll={handleTranscriptScroll}
-        className="lens-scrollbar flex min-h-[18rem] max-h-[30rem] flex-col gap-5 overflow-y-auto rounded-xl border border-line bg-base/40 p-4"
+        className="lens-scrollbar flex min-h-[18rem] max-h-[30rem] flex-col gap-4 overflow-y-auto rounded-md border border-line bg-base/40 p-4"
       >
         {messages.length === 0 ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-10 text-center">
-            <div className="grid size-11 place-items-center rounded-2xl border border-line bg-raised/60 text-faint">
-              <SparklesIcon className="size-5" />
+            <div className="grid size-9 place-items-center rounded-md border border-line bg-base text-faint">
+              <TerminalIcon className="size-4" />
             </div>
             <div>
               <p className="text-sm font-medium text-ink">
@@ -426,17 +426,17 @@ export function LocalAiChat({
           messages.map((message) =>
             message.role === "user" ? (
               <div key={message.id} className="flex flex-col gap-1.5">
-                <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-faint">
+                <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-faint">
                   You
                 </span>
-                <div className="ml-auto max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md border border-accent/25 bg-accent/10 px-4 py-2.5 text-sm leading-6 text-ink">
+                <div className="max-w-[92%] whitespace-pre-wrap break-words border-l-2 border-accent/40 pl-3 text-[13px] leading-6 text-ink">
                   {message.content}
                 </div>
               </div>
             ) : (
               <div key={message.id} className="flex flex-col gap-1.5">
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-accent-strong">
+                  <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-accent-strong">
                     Ollama
                   </span>
                   {message.status === "streaming" && (
@@ -450,10 +450,10 @@ export function LocalAiChat({
                 </div>
                 <div
                   className={cn(
-                    "rounded-2xl rounded-bl-md border px-4 py-3",
+                    "border-l-2 pl-3",
                     message.status === "error"
-                      ? "border-danger/30 bg-danger/[0.06]"
-                      : "border-line bg-raised/40",
+                      ? "border-danger/50"
+                      : "border-line-strong",
                   )}
                 >
                   {message.content.length > 0 ? (
@@ -481,7 +481,7 @@ export function LocalAiChat({
                   )}
 
                   {message.content.length > 0 && (
-                    <div className="mt-3 flex items-center gap-2 border-t border-line/70 pt-2.5">
+                    <div className="mt-2.5 flex items-center gap-2 border-t border-line pt-2">
                       <Button
                         variant="ghost"
                         size="sm"

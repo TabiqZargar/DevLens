@@ -144,7 +144,7 @@ function Meta({
 }) {
   return (
     <div className={cn("min-w-0", wide && "sm:col-span-2")}>
-      <p className="text-[10px] uppercase tracking-[0.14em] text-faint">
+      <p className="text-[10px] uppercase tracking-[0.12em] text-faint">
         {label}
       </p>
       <p className="mt-0.5 break-all font-mono text-xs leading-5 text-ink">
@@ -182,7 +182,7 @@ function ResponseInspector({ data }: { data: ApiResponseMetadata }) {
                 Headers
                 <span
                   aria-hidden="true"
-                  className="ml-1.5 rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[10px] tabular-nums text-muted"
+                  className="ml-1.5 rounded bg-white/[0.06] px-1.5 py-0.5 text-[10px] tabular-nums text-muted"
                 >
                   {data.headers.length}
                 </span>
@@ -206,7 +206,7 @@ function ResponseInspector({ data }: { data: ApiResponseMetadata }) {
       {section === "body" ? (
         <div>
           <div className="flex items-center justify-between border-b border-line px-4 py-2">
-            <span className="text-[10px] uppercase tracking-[0.14em] text-faint">
+            <span className="text-[10px] uppercase tracking-[0.12em] text-faint">
               Response body
             </span>
             {bodyView.kind === "json" && (
@@ -237,7 +237,7 @@ function ResponseInspector({ data }: { data: ApiResponseMetadata }) {
       ) : (
         <div>
           <div className="flex items-center border-b border-line px-4 py-2">
-            <span className="text-[10px] uppercase tracking-[0.14em] text-faint">
+            <span className="text-[10px] uppercase tracking-[0.12em] text-faint">
               Response headers
             </span>
           </div>
@@ -575,7 +575,7 @@ export function ApiBuilderScreen() {
   }
 
   return (
-    <section className="mx-auto flex w-full max-w-7xl flex-col gap-6">
+    <section className="mx-auto flex w-full max-w-7xl flex-col gap-5">
       <PageHeader
         eyebrow={module.milestone}
         title={module.name}
@@ -583,7 +583,7 @@ export function ApiBuilderScreen() {
         actions={<Badge variant="accent">Opt-in network</Badge>}
       />
 
-      <Card className="flex flex-col gap-3 p-4">
+      <Card className="flex flex-col gap-3 p-3">
         <div className="flex flex-wrap items-center gap-2">
           <div>
             <label htmlFor="api-method" className="sr-only">
@@ -713,7 +713,7 @@ export function ApiBuilderScreen() {
                 {counts[section.id] > 0 && (
                   <span
                     aria-hidden="true"
-                    className="ml-1.5 rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[10px] tabular-nums text-muted"
+                    className="ml-1.5 rounded bg-white/[0.06] px-1.5 py-0.5 text-[10px] tabular-nums text-muted"
                   >
                     {counts[section.id]}
                   </span>
@@ -816,7 +816,7 @@ export function ApiBuilderScreen() {
               <div className="flex flex-wrap items-center gap-3">
                 <label
                   htmlFor="api-body-content-type"
-                  className="text-[10px] uppercase tracking-[0.16em] text-faint"
+                  className="text-[10px] uppercase tracking-[0.12em] text-faint"
                 >
                   Content type
                 </label>
@@ -860,7 +860,7 @@ export function ApiBuilderScreen() {
                   placeholder={bodyPlaceholder}
                   spellCheck={false}
                   autoComplete="off"
-                  className="min-h-[12rem] w-full resize-y rounded-xl border border-line bg-base/70 px-3 py-2.5 font-mono text-xs leading-6 text-ink placeholder:text-faint focus:border-accent/50 focus:outline-none focus:ring-1 focus:ring-accent/30 disabled:opacity-50"
+                  className="min-h-[12rem] w-full resize-y rounded-md border border-line bg-base/70 px-3 py-2.5 font-mono text-xs leading-6 text-ink placeholder:text-faint focus:border-accent/50 focus:outline-none focus:ring-1 focus:ring-accent/30 disabled:opacity-50"
                 />
                 {draft.body.contentType === "none" && (
                   <p className="mt-2 text-[11px] text-faint">
@@ -899,7 +899,7 @@ export function ApiBuilderScreen() {
               </Badge>
             )}
           </div>
-          <span className="text-[10px] uppercase tracking-[0.16em] text-faint">
+          <span className="text-[10px] uppercase tracking-[0.12em] text-faint">
             {sendState.phase === "sending"
               ? "Awaiting response"
               : "In memory"}
@@ -938,7 +938,7 @@ export function ApiBuilderScreen() {
               <p className="text-sm font-medium text-ink">
                 {sendState.error.message}
               </p>
-              <p className="mt-1 text-[10px] uppercase tracking-[0.14em] text-faint">
+              <p className="mt-1 text-[10px] uppercase tracking-[0.12em] text-faint">
                 Code: {sendState.error.code}
               </p>
             </div>

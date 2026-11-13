@@ -45,7 +45,7 @@ export function LocalAiAssistFields({
     templates.find((item) => item.id === templateId) ?? templates[0];
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-line bg-base/30 p-4">
+    <div className="flex flex-col gap-3 rounded-md border border-line bg-base/40 p-3.5">
       <div>
         <p className="text-xs font-medium text-muted">Task</p>
         <div
@@ -58,7 +58,7 @@ export function LocalAiAssistFields({
               key={item.id}
               type="button"
               size="sm"
-              variant={item.id === mode ? "primary" : "secondary"}
+              variant={item.id === mode ? "secondary" : "ghost"}
               aria-pressed={item.id === mode}
               onClick={() => onModeChange(item.id)}
               disabled={disabled}

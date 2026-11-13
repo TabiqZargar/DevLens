@@ -59,9 +59,9 @@ function CodeBlockView({ block }: { block: CodeBlock }) {
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-line bg-base/70">
+    <div className="overflow-hidden rounded-md border border-line bg-base/70">
       <div className="flex items-center justify-between gap-3 border-b border-line px-3 py-2">
-        <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-faint">
+        <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-faint">
           {block.language || "code"}
         </span>
         <Button
@@ -111,7 +111,7 @@ function Heading({
       return <h3 className={cn(className, "text-sm")}>{content}</h3>;
     default:
       return (
-        <h4 className={cn(className, "text-xs uppercase tracking-[0.14em]")}>
+        <h4 className={cn(className, "text-xs uppercase tracking-[0.12em]")}>
           {content}
         </h4>
       );

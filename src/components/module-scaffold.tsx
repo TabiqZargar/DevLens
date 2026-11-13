@@ -29,11 +29,11 @@ export function ModuleScaffold({
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
         <Card className="p-6">
           <div className="flex items-start gap-4">
-            <div className="grid size-11 shrink-0 place-items-center rounded-xl border border-accent/25 bg-accent/10 text-accent-strong">
+            <div className="grid size-9 shrink-0 place-items-center rounded-md border border-line bg-base text-muted">
               <ModuleIcon id={module.id} className="size-5" />
             </div>
             <div>
-              <h2 className="text-base font-semibold tracking-tight text-ink">
+              <h2 className="text-sm font-semibold tracking-tight text-ink">
                 {module.name}
               </h2>
               <p className="mt-1 text-sm leading-6 text-muted">
@@ -43,7 +43,7 @@ export function ModuleScaffold({
           </div>
 
           <div className="mt-6 border-t border-line pt-5">
-            <h3 className="text-[11px] font-medium uppercase tracking-[0.18em] text-faint">
+            <h3 className="text-[10px] font-medium uppercase tracking-[0.12em] text-faint">
               Planned capability
             </h3>
             <ul className="mt-3 grid gap-2.5">
@@ -52,7 +52,7 @@ export function ModuleScaffold({
                   key={item}
                   className="flex items-start gap-2.5 text-sm leading-6 text-muted"
                 >
-                  <span className="mt-2 size-1.5 shrink-0 rounded-full bg-accent/70" />
+                  <span className="mt-2 size-1 shrink-0 rounded-sm bg-line-strong" />
                   {item}
                 </li>
               ))}
@@ -61,7 +61,7 @@ export function ModuleScaffold({
         </Card>
 
         <Card className="flex flex-col p-6">
-          <h3 className="text-[11px] font-medium uppercase tracking-[0.18em] text-faint">
+          <h3 className="text-[10px] font-medium uppercase tracking-[0.12em] text-faint">
             Module status
           </h3>
           <dl className="mt-4 space-y-3 text-sm">

@@ -10,8 +10,8 @@ import {
   FIELD_FOCUS,
   LockIcon,
   PageHeader,
-  SparklesIcon,
   Spinner,
+  TerminalIcon,
 } from "../../components";
 import { getModuleDefinition } from "../../shared/modules";
 import {
@@ -147,7 +147,7 @@ function ConnectionSummary({
   if (connection.phase === "error") {
     if (connection.error.code === "invalid-endpoint") {
       return (
-        <p className="border-t border-line pt-4 text-sm leading-6 text-muted">
+        <p className="border-t border-line pt-4 text-[13px] leading-6 text-muted">
           Fix the endpoint above, then check the connection again.
         </p>
       );
@@ -172,7 +172,7 @@ function ConnectionSummary({
   }
 
   return (
-    <p className="border-t border-line pt-4 text-sm leading-6 text-muted">
+    <p className="border-t border-line pt-4 text-[13px] leading-6 text-muted">
       Not checked yet. DevLens has not made a request to this endpoint.
     </p>
   );
@@ -187,7 +187,7 @@ function ModelDetail({
 }) {
   return (
     <div>
-      <dt className="text-[10px] uppercase tracking-[0.14em] text-faint">
+      <dt className="text-[10px] uppercase tracking-[0.12em] text-faint">
         {label}
       </dt>
       <dd className="mt-0.5 break-all font-mono text-xs leading-5 text-ink">
@@ -379,7 +379,7 @@ export function LocalAiScreen() {
   }
 
   return (
-    <section className="mx-auto flex w-full max-w-7xl flex-col gap-6">
+    <section className="mx-auto flex w-full max-w-7xl flex-col gap-5">
       <PageHeader
         eyebrow={module.milestone}
         title={module.name}
@@ -387,17 +387,17 @@ export function LocalAiScreen() {
         actions={<Badge variant="accent">Local only</Badge>}
       />
 
-      <Card className="flex flex-col gap-4 p-5">
+      <Card className="flex flex-col gap-4 p-4">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3">
-            <div className="grid size-10 shrink-0 place-items-center rounded-xl border border-accent/25 bg-accent/10 text-accent-strong">
-              <SparklesIcon className="size-5" />
+            <div className="grid size-9 shrink-0 place-items-center rounded-md border border-line bg-base text-muted">
+              <TerminalIcon className="size-4" />
             </div>
             <div>
-              <h2 className="text-base font-semibold tracking-tight text-ink">
+              <h2 className="text-sm font-semibold tracking-tight text-ink">
                 Ollama connection
               </h2>
-              <p className="mt-1 text-sm leading-6 text-muted">
+              <p className="mt-1 text-[13px] leading-6 text-muted">
                 Check the local HTTP API and discover installed models.
               </p>
             </div>
@@ -471,22 +471,22 @@ export function LocalAiScreen() {
         <ConnectionSummary connection={connection} />
       </Card>
 
-      <Card className="flex flex-col gap-4 p-5">
+      <Card className="flex flex-col gap-4 p-4">
         <div>
-          <h2 className="text-base font-semibold tracking-tight text-ink">
+          <h2 className="text-sm font-semibold tracking-tight text-ink">
             Model
           </h2>
-          <p className="mt-1 text-sm leading-6 text-muted">
+          <p className="mt-1 text-[13px] leading-6 text-muted">
             Choose which installed model should answer local chat messages.
           </p>
         </div>
 
         {connection.phase !== "connected" ? (
-          <p className="rounded-xl border border-line bg-base/40 px-4 py-3 text-sm text-muted">
+          <p className="rounded-md border border-line bg-base/40 px-3.5 py-2.5 text-[13px] text-muted">
             Check the connection to load the models installed in Ollama.
           </p>
         ) : availableModels.length === 0 ? (
-          <div className="rounded-xl border border-line bg-base/40 px-4 py-3">
+          <div className="rounded-md border border-line bg-base/40 px-3.5 py-2.5">
             <p className="text-sm font-medium text-ink">
               No models installed
             </p>
@@ -588,9 +588,9 @@ export function LocalAiScreen() {
         onBusyChange={setChatBusy}
       />
 
-      <Card className="p-5">
+      <Card className="p-4">
         <div className="flex items-start gap-3">
-          <div className="grid size-9 shrink-0 place-items-center rounded-xl border border-line bg-raised/60 text-muted">
+          <div className="grid size-9 shrink-0 place-items-center rounded-md border border-line bg-base text-muted">
             <LockIcon className="size-4" />
           </div>
           <div>

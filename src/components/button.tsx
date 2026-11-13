@@ -13,15 +13,15 @@ export interface ButtonProps
 
 const VARIANTS: Record<ButtonVariant, string> = {
   primary:
-    "bg-accent text-[#080910] hover:bg-accent-strong active:translate-y-px",
+    "bg-accent text-[#0b0d12] hover:bg-accent-strong active:translate-y-px",
   secondary:
     "border border-line bg-raised/70 text-ink hover:border-line-strong hover:bg-raised active:translate-y-px",
-  ghost: "text-muted hover:bg-white/[0.05] hover:text-ink",
+  ghost: "text-muted hover:bg-white/[0.04] hover:text-ink",
 };
 
 const SIZES: Record<ButtonSize, string> = {
-  sm: "h-8 gap-1.5 rounded-lg px-3 text-xs",
-  md: "h-10 gap-2 rounded-xl px-4 text-sm",
+  sm: "h-8 gap-1.5 rounded-md px-2.5 text-xs",
+  md: "h-9 gap-2 rounded-md px-3.5 text-[13px]",
 };
 
 export function Button({
